@@ -94,6 +94,7 @@ python src/preprocessor.py                 # tiền xử lý, chia Train/Val/Tes
 python src/models_trainer.py               # huấn luyện + benchmark
 python src/xai_explainer.py                # độ quan trọng đặc trưng, biểu đồ
 python build_academic_report.py            # xuất báo cáo Word
+python build_presentation.py            # xuất slide thuyết trình PowerPoint (.pptx)
 ```
 
 ---
@@ -117,8 +118,9 @@ HeTriThucTinHocTHPT/
 │   ├── raw/                      # Excel/CSV gốc, mẫu upload theo từng khóa
 │   └── processed/                # train.csv / val.csv / test.csv
 ├── models_saved/                 # Trọng số mô hình .joblib, benchmark, feature importance
-├── reports/                      # Báo cáo Word + biểu đồ
+├── reports/                      # Báo cáo Word + Slide PowerPoint (.pptx) + biểu đồ
 ├── build_academic_report.py      # Sinh báo cáo Word
+├── build_presentation.py         # Sinh slide thuyết trình PowerPoint
 ├── de_cuong_hoc_phan_k20_2.md    # Đề cương & phân công 4 tuần
 ├── requirements.txt
 └── run_app.bat
