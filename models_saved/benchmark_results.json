@@ -1,0 +1,80 @@
+[
+  {
+    "Model":"Baseline: Rule-Based Heuristic",
+    "Accuracy":0.8412,
+    "Macro_Precision":0.833,
+    "Macro_Recall":0.8393,
+    "Macro_F1":0.8283,
+    "Weighted_F1":0.8474,
+    "Recall_High_Risk":0.7878,
+    "Precision_High_Risk":0.9747,
+    "F1_High_Risk":0.8713,
+    "Train_Time_Sec":0.0,
+    "Inference_Latency_ms":0.0
+  },
+  {
+    "Model":"Baseline: Logistic Regression",
+    "Accuracy":0.9034,
+    "Macro_Precision":0.889,
+    "Macro_Recall":0.8981,
+    "Macro_F1":0.8919,
+    "Weighted_F1":0.9057,
+    "Recall_High_Risk":0.9184,
+    "Precision_High_Risk":0.9574,
+    "F1_High_Risk":0.9375,
+    "Train_Time_Sec":0.013,
+    "Inference_Latency_ms":0.0
+  },
+  {
+    "Model":"Baseline: Decision Tree",
+    "Accuracy":0.856,
+    "Macro_Precision":0.8443,
+    "Macro_Recall":0.852,
+    "Macro_F1":0.8431,
+    "Weighted_F1":0.8618,
+    "Recall_High_Risk":0.8735,
+    "Precision_High_Risk":0.9469,
+    "F1_High_Risk":0.9087,
+    "Train_Time_Sec":0.0051,
+    "Inference_Latency_ms":0.0
+  },
+  {
+    "Model":"Improved: Random Forest",
+    "Accuracy":0.8871,
+    "Macro_Precision":0.8708,
+    "Macro_Recall":0.8781,
+    "Macro_F1":0.8731,
+    "Weighted_F1":0.8895,
+    "Recall_High_Risk":0.9102,
+    "Precision_High_Risk":0.9489,
+    "F1_High_Risk":0.9292,
+    "Train_Time_Sec":0.3325,
+    "Inference_Latency_ms":0.0166
+  },
+  {
+    "Model":"Improved: XGBoost",
+    "Accuracy":0.8838,
+    "Macro_Precision":0.8654,
+    "Macro_Recall":0.8677,
+    "Macro_F1":0.8664,
+    "Weighted_F1":0.8845,
+    "Recall_High_Risk":0.9184,
+    "Precision_High_Risk":0.9298,
+    "F1_High_Risk":0.924,
+    "Train_Time_Sec":0.2581,
+    "Inference_Latency_ms":0.0035
+  },
+  {
+    "Model":"Improved: LightGBM",
+    "Accuracy":0.8936,
+    "Macro_Precision":0.8767,
+    "Macro_Recall":0.8778,
+    "Macro_F1":0.8772,
+    "Weighted_F1":0.894,
+    "Recall_High_Risk":0.9388,
+    "Precision_High_Risk":0.9312,
+    "F1_High_Risk":0.935,
+    "Train_Time_Sec":0.0964,
+    "Inference_Latency_ms":0.0052
+  }
+]

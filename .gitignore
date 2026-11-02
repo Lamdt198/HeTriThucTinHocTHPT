@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# Output sinh ra khi chạy app (tạo lại mỗi lần dự báo)
+data/processed/ket_qua_canh_bao_tin_hoc.xlsx
+
+# Word lock files
+~$*.docx

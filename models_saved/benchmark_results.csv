@@ -1,0 +1,7 @@
+Model,Accuracy,Macro_Precision,Macro_Recall,Macro_F1,Weighted_F1,Recall_High_Risk,Precision_High_Risk,F1_High_Risk,Train_Time_Sec,Inference_Latency_ms
+Baseline: Rule-Based Heuristic,0.8412,0.833,0.8393,0.8283,0.8474,0.7878,0.9747,0.8713,0.0,0.0
+Baseline: Logistic Regression,0.9034,0.889,0.8981,0.8919,0.9057,0.9184,0.9574,0.9375,0.013,0.0
+Baseline: Decision Tree,0.856,0.8443,0.852,0.8431,0.8618,0.8735,0.9469,0.9087,0.0051,0.0
+Improved: Random Forest,0.8871,0.8708,0.8781,0.8731,0.8895,0.9102,0.9489,0.9292,0.3325,0.0166
+Improved: XGBoost,0.8838,0.8654,0.8677,0.8664,0.8845,0.9184,0.9298,0.924,0.2581,0.0035
+Improved: LightGBM,0.8936,0.8767,0.8778,0.8772,0.894,0.9388,0.9312,0.935,0.0964,0.0052
