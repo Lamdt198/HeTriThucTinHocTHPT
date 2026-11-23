@@ -675,24 +675,14 @@ with tab1:
         cohort_dict = {f"{c['cohort']} ({c['total_students']} học sinh)": c['cohort'] for c in cohorts}
         cohort_options = ["Toàn bộ 8 Khóa Học (4.070 Học Sinh)"] + list(cohort_dict.keys())
         
-        sel_c1, sel_c2 = st.columns([3.5, 1.5])
-        with sel_c1:
-            selected_cohort_option = st.selectbox(
-                "Khóa học cần truy vấn từ CSDL:",
-                cohort_options,
-                index=0
-            )
-        with sel_c2:
-            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-            if st.button("Lấy dữ liệu từ CSDL", use_container_width=True, type="secondary"):
-                st.session_state['current_db_cohort'] = selected_cohort_option
-                st.session_state['has_executed_pipeline'] = False
-                st.rerun()
-                
-        if 'current_db_cohort' not in st.session_state:
-            st.session_state['current_db_cohort'] = selected_cohort_option
+        selected_cohort_option = st.selectbox(
+            "Khóa học cần truy vấn từ CSDL SQLite (tự động nạp dữ liệu khi chọn):",
+            cohort_options,
+            index=0,
+            key="selected_cohort_dropdown"
+        )
             
-        chosen = st.session_state['current_db_cohort']
+        chosen = selected_cohort_option
         if "Toàn bộ" in chosen:
             df_raw_input = get_all_students_dataframe(in_vietnamese=True)
             data_source_label = f"Toàn bộ 8 khóa ({len(df_raw_input):,} học sinh)"
@@ -718,9 +708,28 @@ with tab1:
 
     if df_raw_input is not None:
         # XEM TRƯỚC DỮ LIỆU ĐẦU VÀO (CHƯA XỬ LÝ)
-        with st.expander(f"👁️ Xem trước bảng điểm đầu vào chưa xử lý — {data_source_label}", expanded=False):
-            st.caption("Dữ liệu thô gồm điểm quá trình THPT, tỷ lệ BTVN LMS, 4 cấp độ tư duy Bloom và 3 mạch kiến thức (CS, ICT, DL):")
-            st.dataframe(df_raw_input.head(6), use_container_width=True)
+        with st.expander(f"Bảng điểm đầu vào chi tiết — {data_source_label}", expanded=False):
+            prev_col1, prev_col2 = st.columns([3.5, 1.5])
+            with prev_col1:
+                st.caption(f"CSDL chứa đầy đủ **{len(df_raw_input):,} học sinh** với 15 chỉ số năng lực. Bạn có thể cuộn chuột để duyệt toàn bộ danh sách, sắp xếp hoặc tìm kiếm:")
+            with prev_col2:
+                preview_limit = st.selectbox(
+                    "Số lượng bản ghi xem:",
+                    ["Toàn bộ (" + f"{len(df_raw_input):,}" + " HS)", "100 học sinh đầu", "500 học sinh đầu", "1.000 học sinh đầu"],
+                    index=0,
+                    key="raw_preview_limit"
+                )
+            
+            if "100" in preview_limit:
+                df_to_show = df_raw_input.head(100)
+            elif "500" in preview_limit:
+                df_to_show = df_raw_input.head(500)
+            elif "1.000" in preview_limit:
+                df_to_show = df_raw_input.head(1000)
+            else:
+                df_to_show = df_raw_input
+                
+            st.dataframe(df_to_show, use_container_width=True, height=360)
 
         # GIAI ĐOẠN 2: BẢNG ĐIỀU KHIỂN & KÍCH HOẠT QUY TRÌNH XỬ LÝ
         st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
