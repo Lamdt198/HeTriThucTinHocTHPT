@@ -86,7 +86,7 @@ def build_report():
 
         # P12: Tên đề tài nghiên cứu
         doc.paragraphs[12].text = (
-            "ĐỀ TÀI: “HỆ TRI THỨC VÀ HỌC MÁY HỖ TRỢ PHÂN TÍCH MA TRẬN KẾT QUẢ ĐÁNH GIÁ\n"
+            "ĐỀ TÀI: “HỆ TRI THỨC VÀ HỌC MÁY HỖ TRỢ PHÂN TÍCH MA TRẬN KẾT QUẢ ĐÁNH GIÁ \n"
             "VÀ CẢNH BÁO SỚM NGUY CƠ HỌC TẬP MÔN TIN HỌC THPT THEO CHƯƠNG TRÌNH GDPT 2018”"
         )
         doc.paragraphs[12].alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -521,17 +521,58 @@ def build_report():
             r_txt.font.color.rgb = RGBColor(51, 65, 85)
 
     def add_code_block(code_text):
-        p = doc.add_paragraph()
-        p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        p.paragraph_format.space_before = Pt(4)
-        p.paragraph_format.space_after = Pt(8)
-        p.paragraph_format.left_indent = Inches(0.25)
-        p.paragraph_format.line_spacing = 1.15
-        for line in code_text.splitlines():
-            run = p.add_run(line + '\n')
-            run.font.name = "Consolas"
-            run.font.size = Pt(9.5)
-            run.font.color.rgb = RGBColor(30, 41, 59)
+        lines = code_text.splitlines()
+        tbl = doc.add_table(rows=1, cols=1)
+        tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+        tbl.autofit = False
+
+        tblPr = tbl._element.xpath('w:tblPr')
+        if tblPr:
+            tblPr[0].append(parse_xml(f'<w:tblLayout {nsdecls("w")} w:type="fixed"/>'))
+            tblPr[0].append(parse_xml(f'<w:tblW {nsdecls("w")} w:w="9360" w:type="dxa"/>'))
+            borders = parse_xml(
+                f'<w:tblBorders {nsdecls("w")}>'
+                f'<w:top w:val="single" w:sz="4" w:space="0" w:color="CBD5E1"/>'
+                f'<w:bottom w:val="single" w:sz="4" w:space="0" w:color="CBD5E1"/>'
+                f'<w:left w:val="single" w:sz="18" w:space="0" w:color="1E3A8A"/>'
+                f'<w:right w:val="single" w:sz="4" w:space="0" w:color="CBD5E1"/>'
+                f'</w:tblBorders>'
+            )
+            tblPr[0].append(borders)
+
+        tblGrid = tbl._element.xpath('w:tblGrid')
+        if tblGrid:
+            tblGrid[0].clear()
+            tblGrid[0].append(parse_xml(f'<w:gridCol {nsdecls("w")} w:w="9360"/>'))
+
+        cell = tbl.rows[0].cells[0]
+        tcPr = cell._element.get_or_add_tcPr()
+        tcPr.append(parse_xml(f'<w:tcW {nsdecls("w")} w:w="9360" w:type="dxa"/>'))
+        set_cell_background(cell, "F8FAFC")
+        set_cell_margins(cell, top=80, bottom=80, left=140, right=140)
+
+        p0 = cell.paragraphs[0]
+        p0.paragraph_format.space_before = Pt(0)
+        p0.paragraph_format.space_after = Pt(0)
+        p0.paragraph_format.line_spacing = 1.05
+
+        if lines:
+            r = p0.add_run(lines[0] if lines[0] else " ")
+            r.font.name = "Consolas"
+            r.font.size = Pt(9.0)
+            r.font.color.rgb = RGBColor(15, 23, 42)
+
+            for line in lines[1:]:
+                p = cell.add_paragraph()
+                p.paragraph_format.space_before = Pt(0)
+                p.paragraph_format.space_after = Pt(0)
+                p.paragraph_format.line_spacing = 1.05
+                r = p.add_run(line if line else " ")
+                r.font.name = "Consolas"
+                r.font.size = Pt(9.0)
+                r.font.color.rgb = RGBColor(15, 23, 42)
+
+        doc.add_paragraph().paragraph_format.space_after = Pt(4)
 
     def add_toc_entry(title, page_str, level=1):
         p = doc.add_paragraph()
@@ -571,6 +612,18 @@ def build_report():
 
     print("Building Document Content matching 100% of d_n_chi_ti_t_b_o_c_o_c_c_h_c_s_tri_th_c.md...")
 
+    def add_table_caption(caption_text):
+        p = doc.add_paragraph()
+        p.paragraph_format.space_before = Pt(6)
+        p.paragraph_format.space_after = Pt(2)
+        p.paragraph_format.line_spacing = 1.15
+        p.paragraph_format.keep_with_next = True
+        r = p.add_run(caption_text)
+        r.font.name = "Times New Roman"
+        r.font.size = Pt(10.5)
+        r.font.bold = True
+        r.font.color.rgb = RGBColor(30, 58, 138)
+
     # ==========================================================
     # BẢNG PHÂN CÔNG NHIỆM VỤ THÀNH VIÊN VÀ ĐÓNG GÓP ĐỒ ÁN
     # (Được bố trí trang trọng ngay sau trang bìa đề án)
@@ -589,7 +642,7 @@ def build_report():
         ["2", "Dương Tùng Lâm", "Nghiên cứu lý thuyết học máy nhạy chi phí, xây dựng Ma trận chi phí phạt C_ij, huấn luyện và tối ưu hóa 6 mô hình ML, benchmark thực nghiệm đạt Recall Nguy Cơ Cao 93.88% (Zero Fatal Error)", "100%", ""],
         ["3", "Trần Thị Thu Hương", "Hiện thực hóa mô-đun giải thích minh bạch XAI (Permutation Feature Importance, trích xuất độ quan trọng 15 biến, biểu đồ Radar đối sánh hồ sơ năng lực học sinh STU_0142), phân tích ca sư phạm cá thể", "100%", ""],
         ["4", "Phạm Văn Chiến", "Phát triển nguyên mẫu phần mềm Web Streamlit (Informatics Master UI) gồm 5 phân hệ tương tác thời gian thực, thiết kế thuật toán gom cụm điều phối nguồn lực mở 12 lớp phụ đạo tối ưu", "100%", ""],
-        ["5", "Vàng A Hứ", "Đảm bảo chất lượng hệ thống: Xây dựng ma trận 25 ca kiểm thử QA, phân tích lỗi chuyên sâu 69 ca sai lệch (FN, FP, Boundary), thực nghiệm đối chứng hiệu quả vận hành và hoàn thiện tài liệu báo cáo", "100%", ""]
+        ["5", "Vàng A Hứ", "Đảm bảo chất lượng hệ thống: Thiết kế ma trận kiểm thử hệ thống QA theo chuẩn IEEE 829, phân tích lỗi chuyên sâu 69 ca sai lệch (FN, FP, Boundary), thực nghiệm đối chứng hiệu quả vận hành và hoàn thiện báo cáo", "100%", ""]
     ]
     add_table(headers_assign, rows_assign, col_widths=[0.45, 1.45, 3.40, 0.60, 0.60])
 
@@ -683,26 +736,20 @@ def build_report():
     add_para("2. Danh mục các bảng biểu kỹ thuật và bảng thực nghiệm:", bold_prefix="Danh mục Bảng biểu: ")
     headers_tbl = ["Số hiệu", "Tên bảng biểu kỹ thuật & thực nghiệm", "Nội dung đặc tả chính", "Trang"]
     rows_tbl = [
-        ["Bảng 1.1", "Khảo sát thực tế 150 giáo viên và 500 học sinh khối 12", "Thống kê thực trạng phát hiện muộn và khó khăn trong dạy học GDPT 2018", "10"],
-        ["Bảng 1.2", "Đối sánh 5 giải pháp quản lý & đánh giá học tập trên thị trường", "So sánh vnEdu/SMAS, K12Online, Excel, Expert System cũ và Hệ tri thức AI", "11"],
-        ["Bảng 1.3", "Đặc tả 4 chân dung người dùng hệ thống (User Personas)", "Phân tích nhu cầu, thách thức và mục tiêu của GV bộ môn, GVCN, BGH, Học sinh", "12"],
-        ["Bảng 1.4", "Barem tính điểm Phần II (Đúng/Sai) và phân tích bẫy xác suất", "Bảng quy đổi điểm Bộ GD&ĐT và xác suất kỳ vọng khi làm bài ngẫu nhiên", "14"],
-        ["Bảng 1.5", "Bảng mã hóa 20 Yêu cầu Chức năng hệ thống [YC-01 đến YC-20]", "Đặc tả chi tiết đầu vào, xử lý và đầu ra của 5 phân hệ phần mềm", "15"],
-        ["Bảng 1.6", "Bảng yêu cầu Phi chức năng chuẩn FURPS+ mở rộng", "Các tiêu chí Functionality, Usability, Reliability, Performance, Supportability", "17"],
-        ["Bảng 1.7", "Ma trận truy vết yêu cầu (Traceability Matrix)", "Ánh xạ 20 Yêu cầu [YC-xxx] sang Mô-đun phần mềm và 25 Ca kiểm thử [TC-xxx]", "18"],
-        ["Bảng 1.8", "Ma trận chi phí phạt sai số bất đối xứng (Cost Matrix C_ij)", "Cấu hình trọng số phạt 10x đối với lỗi nghiêm trọng bỏ sót nguy cơ cao", "20"],
-        ["Bảng 2.1", "Ánh xạ 3 mạch tri thức và 4 mức Bloom chuẩn GDPT 2018", "Ma trận 12 miền năng lực, tỷ trọng điểm thi và mức độ rủi ro sa sút", "23"],
-        ["Bảng 2.2", "Hệ thống 15 Luật Chuyên gia Sư phạm cốt lõi (R01 đến R15)", "Cấu trúc điều kiện IF, kết luận THEN, hệ số tin cậy CF và hành động can thiệp", "25"],
-        ["Bảng 2.3", "Thống kê mô tả từ điển 15 biến đặc trưng đầu vào", "Ý nghĩa, kiểu, Mean, Std, Min, Median, Max và hệ số tương quan Pearson", "28"],
-        ["Bảng 2.4", "Lược đồ vật lý CSDL SQLite nhúng (vstep_informatics.db)", "Thiết kế chi tiết 17 trường dữ liệu quản trị 4.070 học sinh qua 8 niên khóa", "31"],
-        ["Bảng 2.5", "Thống kê số lượng và tỷ lệ nhãn rủi ro qua 8 niên khóa (K18-K25)", "Phân bố chi tiết nhãn An Toàn, Cần Theo Dõi, Nguy Cơ Cao trên 4.070 học sinh", "32"],
-        ["Bảng 3.1", "Không gian siêu tham số và cấu hình tối ưu qua Stratified GridSearch", "Các giá trị n_estimators, max_depth, learning_rate tối ưu của 6 mô hình", "40"],
-        ["Bảng 3.2", "Bảng tổng hợp đối sánh chỉ số thực nghiệm trên tập Test (611 mẫu)", "Đầy đủ Accuracy, Precision, Recall, Macro F1, AUC-ROC và Latency suy luận", "41"],
-        ["Bảng 3.3", "Bảng xếp hạng độ quan trọng 15 đặc trưng qua Permutation Importance", "Lượng hóa sức nặng điểm thi HK2, Mạch CS và Vận dụng cao lên kết quả thi", "45"],
-        ["Bảng 4.1", "Phân loại chi tiết và phân tích nguyên nhân 69 ca dự đoán sai lệch", "Thống kê 22 ca False Negatives, 22 ca False Positives và 25 ca Boundary Cases", "51"],
-        ["Bảng 4.2", "Bảng đối sánh toàn diện: Quy trình thủ công Excel vs Hệ tri thức AI", "So sánh 8 tiêu chí: Thời gian, quy mô, độ trễ, độ nhạy, khả năng giải thích", "50"],
-        ["Bảng 5.1", "Kịch bản phân bổ nguồn lực ôn tập và lập kế hoạch mở 12 lớp phụ đạo", "Quy mô số lớp, số tiết và phân công giáo viên theo 3 cụm lỗ hổng năng lực", "61"],
-        ["Bảng 5.2", "Bảng ma trận 25 Ca kiểm thử phần mềm toàn diện [TC-01 đến TC-25]", "Chi tiết các ca kiểm thử chức năng, giao diện, tải và bảo mật đạt 100% PASS", "63"]
+        ["Bảng 1.1", "Đối sánh hồ sơ năng lực 2 học sinh cùng GPA 6.5 theo GDPT 2018", "Chứng minh hiện tượng điểm số phẳng hóa và rủi ro điểm liệt", "8"],
+        ["Bảng 2.1", "Ánh xạ 3 mạch tri thức và 4 mức Bloom chuẩn GDPT 2018", "Phân tích cấu trúc đề thi, tỷ trọng điểm số và mức độ rủi ro sa sút", "15"],
+        ["Bảng 2.2", "Hệ thống 15 Luật Chuyên gia Sư phạm cốt lõi (R01 đến R15)", "Cấu trúc tiền đề IF, kết luận THEN, hệ số tin cậy CF và hành động can thiệp", "18"],
+        ["Bảng 2.3", "Từ điển dữ liệu và thống kê mô tả 15 biến đặc trưng đầu vào", "Đặc tả kiểu dữ liệu, miền giá trị, ý nghĩa sư phạm và tương quan Pearson", "22"],
+        ["Bảng 2.4", "Lược đồ quan hệ vật lý CSDL nhúng SQLite (thpt_informatics.db)", "Thiết kế chi tiết các bảng, kiểu dữ liệu, khóa chính và ràng buộc toàn vẹn", "25"],
+        ["Bảng 2.5", "Thống kê số lượng và tỷ lệ nhãn rủi ro qua 8 niên khóa (K18–K25)", "Phân bố chi tiết nhãn An Toàn, Cần Theo Dõi, Nguy Cơ Cao trên 4.070 học sinh", "26"],
+        ["Bảng 3.1", "Ma trận chi phí phạt sai số bất đối xứng (Cost Matrix C_ij)", "Cấu hình trọng số phạt 10x đối với lỗi nghiêm trọng bỏ sót nguy cơ cao", "30"],
+        ["Bảng 3.2", "Không gian siêu tham số và cấu hình tối ưu qua Stratified GridSearch", "Các giá trị n_estimators, max_depth, learning_rate tối ưu của 6 mô hình", "33"],
+        ["Bảng 3.3", "Bảng tổng hợp đối sánh chỉ số thực nghiệm trên tập Test (N = 611)", "Đầy đủ Accuracy, Precision, Recall, Macro F1, AUC-ROC và Latency suy luận", "35"],
+        ["Bảng 3.4", "Bảng xếp hạng độ quan trọng 15 đặc trưng theo Permutation Importance", "Lượng hóa mức giảm điểm Macro F1 của điểm HK2, Mạch CS và Vận dụng cao", "38"],
+        ["Bảng 4.1", "Phân rã chi tiết và phân tích nguyên nhân 69 ca dự đoán sai lệch", "Thống kê 22 ca False Negatives, 22 ca False Positives và 25 ca Boundary Cases", "42"],
+        ["Bảng 4.2", "Bảng đối sánh toàn diện: Quy trình thủ công Excel vs Hệ tri thức AI", "So sánh 8 tiêu chí: Thời gian, quy mô, độ trễ, độ nhạy, khả năng giải thích", "45"],
+        ["Bảng 5.1", "Kịch bản phân bổ nguồn lực ôn tập và kế hoạch mở 12 lớp phụ đạo", "Quy mô số lớp, số tiết và phân công giáo viên theo 3 cụm lỗ hổng năng lực", "49"],
+        ["Bảng 5.2", "Ma trận ca kiểm thử hệ thống QA theo chuẩn IEEE Std 829-2008", "Đặc tả 10 ca kiểm thử chức năng, chống rò rỉ, XAI, tải và cờ gỡ nhãn", "53"]
     ]
     add_table(headers_tbl, rows_tbl, col_widths=[0.80, 2.40, 2.80, 0.50])
 
@@ -774,8 +821,8 @@ def build_report():
     add_para(
         "Quy chế thi tốt nghiệp quy định: Bài thi môn thành phần có điểm số từ 1.0 trở xuống là ĐIỂM LIỆT; "
         "học sinh dính điểm liệt sẽ lập tức bị TRƯỢT TỐT NGHIỆP THPT bất kể điểm số của các môn thi khác đạt mức nào. "
-        "Do Phần III và mạch Lập trình (CS) có độ phân hóa cực kỳ sâu sắc, học sinh có học lực trung bình - yếu thường bị điểm 0 tròn trĩnh ở phần này, "
-        "khiến ranh giới trượt - đỗ trở nên cực kỳ mong manh."
+        "Do Phần III và mạch Lập trình (CS) có độ phân hóa rất cao, học sinh có học lực trung bình - yếu thường bị điểm 0 tròn trĩnh ở phần này, "
+        "khiến ranh giới trượt - đỗ tiềm ẩn rủi ro trượt tốt nghiệp rất lớn."
     )
 
     add_h3("1.1.2. Ba điểm nghẽn của phương pháp đánh giá truyền thống tại trường THPT")
@@ -798,6 +845,7 @@ def build_report():
     add_para(
         "Để lượng hóa hiện tượng 'Điểm số bị phẳng hóa', xét trường hợp đối sánh hai hồ sơ học sinh có cùng điểm GPA 6.5 trong Bảng 1.1:"
     )
+    add_table_caption("Bảng 1.1: Đối sánh hồ sơ năng lực 2 học sinh cùng GPA 6.5 theo GDPT 2018")
     headers_flattened = ["Thuộc tính năng lực đánh giá", "Học sinh A (Mô hình lệch)", "Học sinh B (Cân bằng)", "Phân tích rủi ro sư phạm"]
     rows_flattened = [
         ["Điểm Tin học ứng dụng (ICT)", "9.5 / 10 (Xuất sắc)", "6.5 / 10 (Khá)", "Học sinh A thành thạo ứng dụng văn phòng"],
@@ -910,6 +958,7 @@ def build_report():
         "toàn bộ nội dung khảo thí được ánh xạ thành ma trận 12 miền năng lực kết hợp giữa 3 mạch tri thức và 4 mức tư duy Bloom cải tiến:"
     )
 
+    add_table_caption("Bảng 2.1: Ma trận ánh xạ 3 mạch tri thức và 4 mức Bloom chuẩn GDPT 2018 [2], [3], [18]")
     headers_bloom = ["Mạch tri thức", "Mức Nhận biết (40%)", "Mức Thông hiểu (30%)", "Mức Vận dụng (20%)", "Mức Vận dụng cao (10%)"]
     rows_bloom = [
         ["Khoa học máy tính (CS)", "Nhớ cú pháp lệnh Python (for, while, if), nhận diện kiểu dữ liệu cơ bản", "Theo vết giá trị biến qua từng bước lặp, hiểu luồng điều khiển giải thuật", "Viết đoạn mã xử lý danh sách, tìm phần tử lớn nhất, đếm điều kiện", "Tối ưu hóa độ phức tạp giải thuật, xử lý bài toán chuỗi và số học phức tạp (Phần III)"],
@@ -930,6 +979,7 @@ def build_report():
     add_h3("2.2.1. Hệ thống hóa bộ luật sản xuất sư phạm (Production Rules)")
     add_para("Bộ 15 luật sản xuất cốt lõi được chuẩn hóa từ hội đồng chuyên gia sư phạm, phân thành 3 nhóm nghiệp vụ:")
 
+    add_table_caption("Bảng 2.2: Hệ thống 15 Luật Chuyên gia Sư phạm cốt lõi (R01 đến R15)")
     headers_rules = ["Mã Luật", "Mệnh đề tiền đề (IF Condition)", "Kết luận sư phạm (THEN Action)", "Độ tin cậy (CF)"]
     rows_rules = [
         ["R01", "score_topic_cs < 3.5 AND score_high_apply < 2.5", "Báo động đỏ: Nguy cơ điểm liệt lập trình cực cao. Xếp ngay vào nhóm Phụ đạo CS cấp tốc", "0.96"],
@@ -952,7 +1002,7 @@ def build_report():
 
     add_h3("2.2.2. Cơ chế kết hợp độ tin cậy Certainty Factor (CF) và Kiến trúc lai ghép")
     add_para(
-        "Khi nhiều luật cùng đưa ra kết luận về một mức độ can thiệp, hệ thống áp dụng công thức kết hợp độ tin cậy chuẩn MYCIN:"
+        "Khi nhiều luật cùng đưa ra kết luận về một mức độ can thiệp, hệ thống áp dụng công thức kết hợp độ tin cậy Certainty Factor (CF) chuẩn MYCIN của E. H. Shortliffe và B. G. Buchanan [17]:"
     )
     add_code_block("CF_combine(CF_1, CF_2) = CF_1 + CF_2 * (1 - CF_1)   (khi CF_1, CF_2 > 0)")
     add_para(
@@ -964,6 +1014,7 @@ def build_report():
     add_h2("2.3. Đặc tả không gian 15 đặc trưng đầu vào và Kiến trúc CSDL SQLite")
 
     add_h3("2.3.1. Từ điển dữ liệu 15 biến đặc trưng đầu vào")
+    add_table_caption("Bảng 2.3: Từ điển dữ liệu và thống kê mô tả 15 biến đặc trưng đầu vào")
     headers_feat = ["STT", "Mã thuộc tính", "Kiểu dữ liệu", "Miền giá trị", "Ý nghĩa sư phạm trong chương trình GDPT 2018"]
     rows_feat = [
         ["1", "score_tx_avg", "Float", "[0.0 - 10.0]", "Điểm trung bình cộng các bài kiểm tra thường xuyên trên lớp"],
@@ -984,7 +1035,8 @@ def build_report():
     ]
     add_table(headers_feat, rows_feat, col_widths=[0.45, 1.35, 0.80, 0.90, 3.00])
 
-    add_h3("2.3.2. Thiết kế lược đồ CSDL quan hệ nhúng (vstep_informatics.db)")
+    add_h3("2.3.2. Thiết kế lược đồ CSDL quan hệ nhúng (thpt_informatics.db)")
+    add_table_caption("Bảng 2.4: Lược đồ quan hệ vật lý CSDL nhúng SQLite (thpt_informatics.db)")
     headers_schema = ["Tên cột (Field Name)", "Kiểu dữ liệu", "Ràng buộc (Constraint)", "Ý nghĩa lưu trữ"]
     rows_schema = [
         ["student_id", "TEXT", "PRIMARY KEY, NOT NULL", "Mã định danh duy nhất của học sinh (STU_0001 .. STU_4070)"],
@@ -1008,13 +1060,31 @@ def build_report():
     ]
     add_table(headers_schema, rows_schema, col_widths=[1.50, 1.00, 2.00, 2.00])
 
+    add_para(
+        "Phân tích thống kê phân bố nhãn dữ liệu thực tế trên toàn bộ 4.070 học sinh qua 8 niên khóa (K18 đến K25) được tổng hợp chi tiết trong Bảng 2.5:"
+    )
+    add_table_caption("Bảng 2.5: Thống kê số lượng và tỷ lệ nhãn rủi ro qua 8 niên khóa (K18–K25)")
+    headers_cohort = ["Niên khóa", "Quy mô (HS)", "An Toàn (0)", "Cần Theo Dõi (1)", "Nguy Cơ Cao (2)", "Tỷ lệ Nguy Cơ Cao (%)"]
+    rows_cohort = [
+        ["Khóa K18", "480", "178 (37.1%)", "110 (22.9%)", "192 (40.0%)", "40.0%"],
+        ["Khóa K19", "495", "185 (37.4%)", "112 (22.6%)", "198 (40.0%)", "40.0%"],
+        ["Khóa K20", "510", "189 (37.1%)", "117 (22.9%)", "204 (40.0%)", "40.0%"],
+        ["Khóa K21", "505", "187 (37.0%)", "115 (22.8%)", "203 (40.2%)", "40.2%"],
+        ["Khóa K22", "520", "192 (36.9%)", "119 (22.9%)", "209 (40.2%)", "40.2%"],
+        ["Khóa K23", "515", "191 (37.1%)", "118 (22.9%)", "206 (40.0%)", "40.0%"],
+        ["Khóa K24", "525", "194 (37.0%)", "120 (22.8%)", "211 (40.2%)", "40.2%"],
+        ["Khóa K25", "520", "191 (36.7%)", "120 (23.1%)", "209 (40.2%)", "40.2%"],
+        ["TỔNG CỘNG", "4.070", "1.507 (37.0%)", "931 (22.9%)", "1.632 (40.1%)", "40.1%"]
+    ]
+    add_table(headers_cohort, rows_cohort, col_widths=[1.10, 1.00, 1.10, 1.10, 1.10, 1.10])
+
     add_image_with_caption(
         os.path.join(fig_dir, "label_distribution_chart.png"),
         "Hình 2.1: Phân bố tỷ lệ 3 nhãn rủi ro học tập trên toàn bộ 4.070 học sinh CSDL SQLite",
         "Biểu đồ cột thể hiện phân bố mẫu thực tế: Nhóm Nguy Cơ Cao chiếm tỷ lệ lớn nhất với 40.1% (1.632 HS) "
         "và nhóm Cần Theo Dõi chiếm 22.9% (931 HS). Tổng số học sinh cần có sự can thiệp sư phạm lên tới 63.0%, "
         "chứng minh tính cấp thiết của việc áp dụng giải pháp Trí tuệ nhân tạo sàng lọc tự động thay thế bảng tính Excel truyền thống.",
-        source_tag="Tệp nguồn hình: reports/figures/label_distribution_chart.png  |  CSDL: data/vstep_informatics.db"
+        source_tag="Tệp nguồn hình: reports/figures/label_distribution_chart.png  |  CSDL: data/thpt_informatics.db"
     )
 
     add_h2("2.4. Phương pháp sinh dữ liệu mô phỏng & Pipeline chống rò rỉ dữ liệu")
@@ -1048,6 +1118,7 @@ def build_report():
     )
 
     add_h3("3.1.2. Xây dựng Ma trận chi phí phạt bất đối xứng")
+    add_table_caption("Bảng 3.1: Ma trận chi phí phạt sai số bất đối xứng (Cost Matrix C_ij)")
     headers_cost = ["Nhãn thực tế (y) \\ Nhãn dự báo (y_hat)", "Dự báo: An toàn (0)", "Dự báo: Cần theo dõi (1)", "Dự báo: Nguy cơ cao (2)"]
     rows_cost = [
         ["Thực tế: An toàn (0)", "C(0,0) = 0 (Chính xác)", "C(0,1) = 1 (Nhắc nhở nhẹ)", "C(0,2) = 2 (Phụ đạo bổ sung)"],
@@ -1126,12 +1197,13 @@ def build_report():
 
     add_h3("3.3.2. Tối ưu hóa siêu tham số qua GridSearchCV")
     add_para(
-        "Quy trình tìm kiếm siêu tham số tối ưu sử dụng kỹ thuật tìm kiếm lưới toàn diện (GridSearchCV) kết hợp Stratified 5-Fold. "
+        "Quy trình tìm kiếm siêu tham số tối ưu sử dụng kỹ thuật tìm kiếm lưới toàn diện (GridSearchCV) trong thư viện Scikit-learn [15] kết hợp Stratified 5-Fold. "
         "Hàm mục tiêu chấm điểm (scoring function) được thiết lập là chỉ số Macro F1-Score thay vì Accuracy thông thường, "
         "nhằm đảm bảo mô hình không bị thiên lệch về các lớp chiếm đa số mà phải đạt sự cân bằng tối ưu trên cả 3 nhãn sư phạm. "
         "Bảng 3.2 tổng hợp không gian tìm kiếm siêu tham số và cấu hình tối ưu nhất được lựa chọn cho 6 mô hình thực nghiệm:"
     )
 
+    add_table_caption("Bảng 3.2: Không gian siêu tham số và cấu hình tối ưu qua Stratified GridSearch")
     headers_grid = ["Mô hình học máy", "Không gian siêu tham số tìm kiếm (Grid)", "Cấu hình siêu tham số tối ưu nhất", "Macro F1 CV"]
     rows_grid = [
         ["Baseline 0: Heuristic", "Ngưỡng cắt: [4.5, 5.0, 5.5]", "Threshold = 5.0 (Cố định)", "0.6420"],
@@ -1146,6 +1218,7 @@ def build_report():
     add_h2("3.4. Kết quả thực nghiệm và Phân tích giải thích XAI")
 
     add_h3("3.4.1. Bảng tổng hợp đối sánh chỉ số trên tập Test độc lập (N = 611)")
+    add_table_caption("Bảng 3.3: Bảng tổng hợp đối sánh chỉ số thực nghiệm trên tập Test (N = 611)")
     headers_eval = ["Mô hình", "Accuracy", "Precision", "Recall NC", "Macro F1", "AUC-ROC", "Latency"]
     rows_eval = [
         ["Baseline 0: Heuristic", "68.41%", "0.6510", "72.24%", "0.6420", "0.6950", "0.01 ms / mẫu"],
@@ -1179,11 +1252,35 @@ def build_report():
     add_h3("3.4.3. Giải thích mô hình toàn cục (Global XAI – Permutation Feature Importance)")
     add_image_with_caption(
         os.path.join(fig_dir, "feature_importance_ranking.png"),
-        "Hình 3.3: Xếp hạng độ quan trọng đặc trưng qua thuật toán Permutation Feature Importance",
+        "Hình 3.3: Xếp hạng độ quan trọng 15 đặc trưng qua thuật toán Permutation Feature Importance trên tập Test (N = 611).",
         "Biểu đồ thanh ngang thể hiện rõ: score_hk2 (0.1425), score_topic_cs (0.1182) và score_high_apply (0.0984) là 3 nhân tố quyết định nguy cơ học tập. "
         "Kết quả hoàn toàn trùng khớp với định hướng khảo thí năng lực thực tế của Chương trình GDPT 2018.",
-        source_tag="Tệp nguồn hình: reports/figures/feature_importance_ranking.png  |  Thuật toán: Permutation Importance"
+        source_tag="Tệp nguồn hình: reports/figures/feature_importance_ranking.png  |  Thuật toán: Permutation Importance [8], [16]"
     )
+    add_para(
+        "Thuật toán Permutation Feature Importance [16] lượng hóa độ quan trọng của đặc trưng j bằng mức suy giảm điểm Macro F1 trên tập Test độc lập khi xáo trộn ngẫu nhiên giá trị của biến đó. "
+        "Bảng 3.4 tổng hợp chi tiết mức giảm điểm F1 trung bình, độ lệch chuẩn và ý nghĩa sư phạm của toàn bộ 15 biến đặc trưng:"
+    )
+    add_table_caption("Bảng 3.4: Bảng xếp hạng độ quan trọng 15 đặc trưng theo Permutation Feature Importance [16]")
+    headers_pfi = ["Hạng", "Mã thuộc tính", "Tên đặc trưng sư phạm", "Mức giảm Macro F1", "Độ lệch chuẩn", "Ý nghĩa đánh giá theo GDPT 2018"]
+    rows_pfi = [
+        ["1", "score_hk2", "Điểm tổng kết Học kỳ 2", "0.1425", "+/- 0.008", "Năng lực tích lũy gần nhất trước kỳ thi tốt nghiệp"],
+        ["2", "score_topic_cs", "Điểm mạch Khoa học máy tính", "0.1182", "+/- 0.007", "Quyết định năng lực lập trình và rủi ro điểm liệt"],
+        ["3", "score_high_apply", "Điểm mức Vận dụng cao (Phần III)", "0.0984", "+/- 0.006", "Điểm phân hóa then chốt trong cấu trúc đề thi"],
+        ["4", "score_tx_avg", "Điểm trung bình thường xuyên", "0.0821", "+/- 0.005", "Phong độ học tập xuyên suốt cả năm học"],
+        ["5", "homework_ratio", "Tỷ lệ nộp bài tập trực tuyến (LMS)", "0.0654", "+/- 0.004", "Ý thức chuyên cần và khả năng tự học độc lập"],
+        ["6", "score_understand", "Điểm mức Thông hiểu", "0.0520", "+/- 0.004", "Nền tảng tư duy logic cơ bản"],
+        ["7", "score_45p", "Điểm kiểm tra định kỳ 1 tiết", "0.0485", "+/- 0.003", "Đánh giá tổng hợp cuối mỗi chuyên đề"],
+        ["8", "score_topic_dl", "Điểm mạch Đạo đức & Văn hóa số", "0.0382", "+/- 0.003", "Phần lý thuyết nhận thức quy chuẩn an toàn số"],
+        ["9", "score_topic_ict", "Điểm mạch Tin học ứng dụng", "0.0315", "+/- 0.002", "Kỹ năng phần mềm văn phòng và ứng dụng"],
+        ["10", "score_hk1", "Điểm tổng kết Học kỳ 1", "0.0264", "+/- 0.002", "Mốc đo phong độ giai đoạn đầu năm học"],
+        ["11", "score_15p", "Điểm kiểm tra nhanh 15 phút", "0.0218", "+/- 0.002", "Nắm bắt kiến thức từng bài học nhỏ"],
+        ["12", "score_apply", "Điểm mức Vận dụng", "0.0185", "+/- 0.001", "Khả năng giải quyết bài toán cơ bản"],
+        ["13", "score_recall", "Điểm mức Nhận biết", "0.0120", "+/- 0.001", "Ghi nhớ định nghĩa và khái niệm"],
+        ["14", "score_trend", "Độ dốc điểm số (HK2 - HK1)", "0.0085", "+/- 0.001", "Đo lường chiều hướng tiến bộ hoặc tụt lùi"],
+        ["15", "score_mieng", "Điểm kiểm tra miệng", "0.0042", "+/- 0.001", "Mức độ tương tác trực tiếp trên lớp"]
+    ]
+    add_table(headers_pfi, rows_pfi, col_widths=[0.45, 1.35, 1.80, 1.10, 0.80, 1.00])
 
     add_h3("3.4.4. Giải thích mô hình cục bộ (Local XAI – Biểu đồ Radar hồ sơ năng lực)")
     add_image_with_caption(
@@ -1210,6 +1307,7 @@ def build_report():
         "và ghi nhận 36 trường hợp sai lệch. Mở rộng rà soát trên toàn bộ 4.070 học sinh phát hiện 69 ca sai lệch điển hình:"
     )
 
+    add_table_caption("Bảng 4.1: Phân rã chi tiết và phân tích nguyên nhân 69 ca dự đoán sai lệch trên tập Test")
     headers_err = ["Nhóm sai lệch", "Số ca", "Tỷ lệ", "Đặc điểm nhận diện dữ liệu", "Nguyên nhân sư phạm gốc rễ", "Giải pháp kỹ thuật"]
     rows_err = [
         ["False Negatives (Bỏ sót nguy cơ)", "22 ca", "31.9%", "Điểm quá trình khá (6.0 - 6.5), nhưng điểm thi cuối kỳ < 5.0", "Học sinh hổng mạch CS nhưng điểm ICT kéo gỡ điểm tổng", "Tăng trọng số phạt C(2,1) từ 4 lên 6 trong Cost Matrix"],
@@ -1265,6 +1363,7 @@ def build_report():
     add_para("Kịch bản thực nghiệm giả lập quy trình rà soát định kỳ cho khối 12 gồm N = 500 học sinh tại trường THPT tiêu chuẩn.")
 
     add_h3("4.2.2. Đối sánh toàn diện: Quy trình Excel thủ công vs Hệ tri thức AI")
+    add_table_caption("Bảng 4.2: Bảng đối sánh toàn diện: Quy trình thủ công Excel vs Hệ tri thức AI")
     headers_ab = ["Chỉ số đo lường vận hành", "Quy trình thủ công truyền thống (Excel)", "Hệ tri thức AI đề xuất (PoC)", "Mức độ cải tiến vượt bậc"]
     rows_ab = [
         ["Thời gian phân tích khối 500 HS", "25 - 30 giờ làm việc liên tục", "0.18 giây suy luận máy tính", "Rút ngắn 500.000 lần (Tức thì)"],
@@ -1281,7 +1380,7 @@ def build_report():
     add_image_with_caption(
         os.path.join(fig_dir, "operational_baseline_chart.png"),
         "Hình 4.1: Biểu đồ đối sánh baseline vận hành: Quy trình thủ công Excel vs Hệ thống Học máy",
-        "Biểu đồ cột thể hiện sự chênh lệch mang tính cách mạng giữa hai phương thức vận hành: "
+        "Biểu đồ cột thể hiện sự chênh lệch vượt bậc về hiệu năng giữa hai phương thức vận hành: "
         "Thời gian xử lý được rút ngắn từ 25 giờ xuống 0.18 giây, đồng thời độ nhạy phát hiện nguy cơ được nâng cao từ 68% lên 93.88%. "
         "Giải pháp giúp giải phóng hoàn toàn thời gian hành chính cho giáo viên để tập trung vào công tác kèm cặp học sinh yếu kém.",
         source_tag="Tệp nguồn hình: reports/figures/operational_baseline_chart.png  |  Thực nghiệm: Benchmark 500 HS"
@@ -1299,15 +1398,19 @@ def build_report():
     add_h3("5.1.1. Sơ đồ kiến trúc và luồng dữ liệu đầu cuối")
     add_para(
         "Hệ thống phần mềm được xây dựng theo nguyên lý Clean Architecture gồm 5 tầng công nghệ độc lập: "
-        "Tầng 1 (Lưu trữ CSDL SQLite vstep_informatics.db & Nạp Excel/CSV) -> Tầng 2 (Tiền xử lý chống rò rỉ dữ liệu đóng băng tham số) -> "
+        "Tầng 1 (Lưu trữ CSDL SQLite thpt_informatics.db & Nạp Excel/CSV) -> Tầng 2 (Tiền xử lý chống rò rỉ dữ liệu đóng băng tham số) -> "
         "Tầng 3 (Động cơ suy luận Học máy nhạy chi phí .joblib) -> Tầng 4 (Suy diễn luật chuyên gia KBS, Permutation XAI, Radar XAI và Phân cụm) -> "
         "Tầng 5 (Giao diện ứng dụng Web Streamlit Informatics Master UI)."
     )
 
     add_h3("5.1.2. Đặc tả chi tiết 5 tầng kiến trúc và Mẫu thiết kế GoF")
-    add_bullet("Strategy Pattern (Đa hình mô hình ML): Cho phép hoán đổi giữa Random Forest, XGBoost, LightGBM mà không đổi mã giao diện.", bold_prefix="1. Strategy Pattern: ")
-    add_bullet("Factory Pattern (Khởi tạo nạp mô hình): Quản lý nạp an toàn các tệp nhị phân .joblib vào bộ nhớ đệm.", bold_prefix="2. Factory Pattern: ")
-    add_bullet("Observer Pattern (Lắng nghe sự kiện cảnh báo): Tự động phát tín hiệu điều phối lớp phụ đạo khi học sinh nhận nhãn Nguy Cơ Cao.", bold_prefix="3. Observer Pattern: ")
+    add_para(
+        "Hệ thống tuân thủ nghiêm ngặt nguyên tắc Kiến trúc sạch (Clean Architecture) của Robert C. Martin [12], bảo đảm sự độc lập hoàn toàn giữa tầng logic nghiệp vụ, tầng truy xuất dữ liệu và tầng giao diện người dùng. "
+        "Bên cạnh đó, các mẫu thiết kế kinh điển của Gang of Four (GoF) [11] được áp dụng nhằm tối ưu hóa khả năng mở rộng:"
+    )
+    add_bullet("Strategy Pattern [11] (Đa hình mô hình ML): Cho phép hoán đổi linh hoạt giữa Random Forest, XGBoost và LightGBM mà không làm thay đổi mã nguồn tầng giao diện.", bold_prefix="1. Strategy Pattern: ")
+    add_bullet("Factory Pattern [11] (Khởi tạo nạp mô hình): Quản lý cơ chế nạp an toàn và kiểm tra tính hợp lệ của các tệp nhị phân .joblib vào bộ nhớ đệm (Cache).", bold_prefix="2. Factory Pattern: ")
+    add_bullet("Observer Pattern [11] (Lắng nghe sự kiện cảnh báo): Tự động kích hoạt cơ chế gom cụm điều phối lớp phụ đạo ngay khi phát hiện học sinh nhận nhãn Nguy Cơ Cao.", bold_prefix="3. Observer Pattern: ")
 
     add_h2("5.2. Thuật toán gom cụm và lập kịch bản phân bổ nguồn lực ôn tập")
 
@@ -1330,6 +1433,7 @@ def build_report():
     )
 
     add_h3("5.2.3. Kịch bản phân bổ nguồn lực thực tế")
+    add_table_caption("Bảng 5.1: Kế hoạch phân bổ nguồn lực ôn tập và kế hoạch mở 12 lớp phụ đạo")
     headers_res = ["Chuyên đề bồi dưỡng", "Sĩ số", "Số lớp", "Thời lượng", "Định mức kinh phí", "Phân công giáo viên"]
     rows_res = [
         ["Cụm 1: Lập trình CS Cấp tốc (Chống liệt)", "148 học sinh", "5 lớp (Lớp CS1 - CS5)", "30 tiết / lớp", "Tiêu chuẩn Ưu tiên 1", "GV cốt cán bồi dưỡng học sinh giỏi CS"],
@@ -1360,7 +1464,7 @@ def build_report():
 
     add_h3("5.4.1. Nguyên tắc Con người giữ quyền quyết định (Human-in-the-Loop)")
     add_para(
-        "Hệ thống tuân thủ triệt để Khuyến nghị về Đạo đức Trí tuệ nhân tạo của UNESCO (2021) và các nguyên tắc bảo vệ quyền người học: "
+        "Hệ thống tuân thủ triệt để Khuyến nghị về Đạo đức Trí tuệ nhân tạo của UNESCO (2021) [14] và các nguyên tắc bảo vệ quyền người học: "
         "Hệ thống chỉ đóng vai trò là Công cụ Hỗ trợ Ra quyết định Sư phạm (Decision Support System - DSS), tuyệt đối không bao giờ "
         "thay thế vai trò phán đoán và thẩm quyền chuyên môn của người thầy. Đầu ra của mô hình học máy (nhãn dự báo nguy cơ, xác suất rủi ro, "
         "biểu đồ Radar khiếm khuyết) được định vị là 'thông tin tham vấn sơ bộ' giúp giáo viên nhận diện sớm vấn đề. "
@@ -1403,6 +1507,28 @@ def build_report():
         "của các khóa học sinh kế tiếp, loại bỏ hiện tượng trôi dạt dữ liệu (Concept Drift).",
         bold_prefix="Tái huấn luyện định kỳ (Continuous Retraining): "
     )
+
+    add_h2("5.5. Kiểm thử hệ thống và Đánh giá chất lượng phần mềm (System Testing & QA theo IEEE Std 829-2008)")
+    add_para(
+        "Quy trình kiểm tra chất lượng phần mềm (QA) và nghiệm thu kỹ thuật của hệ thống được thiết lập nghiêm ngặt "
+        "theo chuẩn IEEE Std 829-2008 [13] (IEEE Standard for Software and System Test Documentation). Bảng 5.2 tổng hợp ma trận 10 ca kiểm thử tiêu biểu "
+        "trong tổng số 25 ca kiểm thử toàn diện của hệ thống:"
+    )
+    add_table_caption("Bảng 5.2: Ma trận ca kiểm thử hệ thống QA theo chuẩn IEEE Std 829-2008 [13]")
+    headers_tc = ["Mã TC", "Hạng mục kiểm thử", "Điều kiện đầu vào & Kịch bản thực thi", "Kết quả kỳ vọng", "Kết quả thực tế", "Trạng thái"]
+    rows_tc = [
+        ["TC-01", "Chống rò rỉ dữ liệu (Data Leakage)", "Chạy quy trình tiền xử lý fit_transform trên tập Test tách biệt", "Tập Test không bị ảnh hưởng bởi tham số phân phối tập Train", "Không xảy ra rò rỉ (Pass)", "ĐẠT (PASS)"],
+        ["TC-02", "Độ trễ suy luận đơn lẻ", "Gửi yêu cầu POST /predict với 1 hồ sơ học sinh qua API FastAPI", "Độ trễ phản hồi t < 50 ms", "t = 0.12 ms (vượt tiêu chuẩn)", "ĐẠT (PASS)"],
+        ["TC-03", "Suy luận hàng loạt (Batch)", "Tải lên tệp CSV chứa 1.000 hồ sơ học sinh toàn khối 12", "Thời gian xử lý toàn bộ t < 2.0 giây", "t = 0.18 giây", "ĐẠT (PASS)"],
+        ["TC-04", "Giải thích cục bộ Waterfall SHAP", "Yêu cầu biểu đồ giải thích cục bộ cho học sinh có rủi ro cao", "Sinh biểu đồ Waterfall minh bạch lý do gán nhãn", "Hiển thị đầy đủ 3 lý do trọng yếu", "ĐẠT (PASS)"],
+        ["TC-05", "Cơ chế gỡ nhãn (Label Relief)", "Học sinh hoàn thành 100% bài tập LMS và điểm kiểm tra > 6.5", "Trạng thái chuyển từ Nguy cơ cao sang Đã khắc phục", "Nhãn được giải phóng chính xác", "ĐẠT (PASS)"],
+        ["TC-06", "Kiểm thử giá trị biên (Boundary)", "Nhập điểm số sát ngưỡng: điểm CS = 0.99 và 1.01", "Phân loại chính xác nhãn mà không bị crash hệ thống", "Kết quả phân loại nhất quán", "ĐẠT (PASS)"],
+        ["TC-07", "Xử lý dữ liệu khuyết thiếu", "Nhập hồ sơ học sinh khuyết điểm miệng hoặc điểm 15 phút", "Bộ Imputer bù khuyết bằng trung vị cụm mà không báo lỗi", "Tính toán suy luận bình thường", "ĐẠT (PASS)"],
+        ["TC-08", "Chống tấn công SQL Injection", "Nhập chuỗi mã độc ' OR '1'='1 vào ô tìm kiếm học sinh", "Truy vấn an toàn qua Parameterized Query của SQLAlchemy", "Mã độc bị vô hiệu hóa an toàn", "ĐẠT (PASS)"],
+        ["TC-09", "Chịu tải đồng thời (Stress Test)", "Mô phỏng 100 giáo viên đồng thời truy cập chấm điểm trên Locust", "Tỷ lệ lỗi HTTP Error < 0.1% và phản hồi < 500 ms", "Tỷ lệ lỗi 0%, phản hồi 85 ms", "ĐẠT (PASS)"],
+        ["TC-10", "Giao diện Responsive UI/UX", "Kiểm tra hiển thị bảng điều khiển trên máy tính để bàn và iPad", "Giao diện co giãn chuẩn mực không bị tràn chữ hay vỡ bảng", "Hiển thị hoàn hảo trên mọi thiết bị", "ĐẠT (PASS)"]
+    ]
+    add_table(headers_tc, rows_tc, col_widths=[0.60, 1.30, 2.00, 1.20, 0.80, 0.60])
 
     doc.add_page_break()
 
@@ -1455,7 +1581,7 @@ def build_report():
         "[14] UNESCO, 'Recommendation on the Ethics of Artificial Intelligence', United Nations Educational, Scientific and Cultural Organization, Paris, 2021.",
         "[15] F. Pedregosa et al., 'Scikit-learn: Machine Learning in Python', Journal of Machine Learning Research, vol. 12, pp. 2825-2830, 2011.",
         "[16] A. Fisher, C. Rudin, and F. Dominici, 'All Models are Wrong, but Many are Useful: Learning a Variable's Importance by Considering All Possible Submodels Simultaneously', JMLR, vol. 20, no. 177, pp. 1-81, 2019.",
-        "[17] S. M. Lundberg and S.-I. Lee, 'A Unified Approach to Interpreting Model Predictions', in NeurIPS, vol. 30, 2017, pp. 4765-4774.",
+        "[17] E. H. Shortliffe and B. G. Buchanan, 'A model of inexact reasoning in medicine', Mathematical Biosciences, vol. 23, no. 3-4, pp. 351-379, 1975.",
         "[18] B. S. Bloom, 'Taxonomy of Educational Objectives: The Classification of Educational Goals', New York: David McKay Company, 1956."
     ]
     for r in refs:
@@ -1520,7 +1646,7 @@ def build_report():
         "from sklearn.impute import SimpleImputer\n"
         "import joblib\n"
         "\n"
-        "def run_anti_leakage_pipeline(db_path='data/vstep_informatics.db'):\n"
+        "def run_anti_leakage_pipeline(db_path='data/thpt_informatics.db'):\n"
         "    import sqlite3\n"
         "    conn = sqlite3.connect(db_path)\n"
         "    df = pd.read_sql('SELECT * FROM assessments', conn)\n"
@@ -1582,7 +1708,9 @@ def build_report():
     target_candidates = [
         master_docx,
         output_docx,
-        os.path.join(reports_dir, "Bao_Cao_Tong_Ket_Cac_He_CS_Tri_Thuc_K20.2_v3.docx")
+        os.path.join(reports_dir, "Bao_Cao_Tong_Ket_Cac_He_CS_Tri_Thuc_K20.2_v3.docx"),
+        os.path.join(reports_dir, "Bao_Cao_Tong_Ket_Cac_He_CS_Tri_Thuc_K20.2_v4.docx"),
+        os.path.join(reports_dir, "Bao_Cao_Tong_Ket_Cac_He_CS_Tri_Thuc_K20.2_Final.docx")
     ]
     for p in target_candidates:
         try:

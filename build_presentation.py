@@ -718,7 +718,7 @@ def create_deck():
 
     data_info = (
         "• Tổng quy mô: 4.070 học sinh trên 8 niên khóa (K18 đến K25).\n\n"
-        "• Lưu trữ nhúng: CSDL SQLite ('vstep_informatics.db') tối ưu truy vấn tức thì.\n\n"
+        "• Lưu trữ nhúng: CSDL SQLite ('thpt_informatics.db') tối ưu truy vấn tức thì.\n\n"
         "• Phân bố 3 nhãn rủi ro thực tế:\n"
         "  🟢 An Toàn: 2.434 HS (59.80%)\n"
         "  🟡 Cần Theo Dõi: 1.022 HS (25.11%)\n"
@@ -1217,7 +1217,7 @@ def create_deck():
                        "Hệ thống thiết kế 5 tầng độc lập: Data Layer (SQLite) -> Anti-Leakage Pipeline -> ML Engine -> KBS & XAI -> Streamlit UI.")
     tiers = [
         ("TẦNG 1: DỮ LIỆU & LƯU TRỮ (DATA LAYER)",
-         "• CSDL nhúng SQLite (vstep_informatics.db - 4.070 học sinh trên 8 niên khóa).\n"
+         "• CSDL nhúng SQLite (thpt_informatics.db - 4.070 học sinh trên 8 niên khóa).\n"
          "• Trình nạp tệp linh hoạt hỗ trợ nhập dữ liệu định dạng Excel (.xlsx) và CSV chuẩn hóa danh sách lớp.", C_NAVY_DARK),
         ("TẦNG 2: TIỀN XỬ LÝ & CHỐNG RÒ RỈ (ANTI-LEAKAGE PIPELINE)",
          "• Bộ lọc kiểm tra tính toàn vẹn dải điểm [0, 10]; xử lý dữ liệu khuyết thiếu bằng Median tập Train.\n"
