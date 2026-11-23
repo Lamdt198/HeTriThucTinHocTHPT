@@ -22,6 +22,7 @@ from PIL import Image
 import docx
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
+from docx.enum.section import WD_SECTION
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
 from docx.oxml import parse_xml
@@ -132,7 +133,15 @@ def build_report():
             p21 = doc.paragraphs[21]
             p21._element.getparent().remove(p21._element)
 
-        # Cấu hình Section 1 (Body toàn văn báo cáo)
+        # Cấu hình Section 0 (Trang bìa - hoàn toàn sạch header và footer)
+        s0 = doc.sections[0]
+        s0.different_first_page_header_footer = False
+        for child in list(s0.header._element):
+            s0.header._element.remove(child)
+        for child in list(s0.footer._element):
+            s0.footer._element.remove(child)
+
+        # Cấu hình Section 1 (Bảng phân công nhiệm vụ thành viên)
         s1 = doc.sections[1]
         s1.page_width = Inches(8.27)
         s1.page_height = Inches(11.69)
@@ -141,9 +150,24 @@ def build_report():
         s1.left_margin = Inches(0.98)    # 2.5 cm
         s1.right_margin = Inches(0.79)   # 2.0 cm
 
-        # Xóa header rác và cấu hình Footer số trang ở giữa chuẩn Times New Roman
+        # Header riêng cho Section 1
+        s1.header.is_linked_to_previous = False
+        for child in list(s1.header._element):
+            s1.header._element.remove(child)
+        hp1 = s1.header.add_paragraph()
+        hp1.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        hp1.paragraph_format.space_before = Pt(0)
+        hp1.paragraph_format.space_after = Pt(2)
+        r_hp1 = hp1.add_run("HỌC PHẦN: CÁC HỆ CƠ SỞ TRI THỨC — BẢNG PHÂN CÔNG NHIỆM VỤ")
+        r_hp1.font.name = "Times New Roman"
+        r_hp1.font.size = Pt(8.5)
+        r_hp1.font.italic = True
+        r_hp1.font.color.rgb = RGBColor(100, 116, 139)
+
+        # Cấu hình Footer số trang ở giữa chuẩn Times New Roman bắt đầu từ Trang 2
         for child in list(s1.footer._element):
             s1.footer._element.remove(child)
+        s1.footer.is_linked_to_previous = False
         fp = s1.footer.add_paragraph()
         fp.alignment = WD_ALIGN_PARAGRAPH.CENTER
         fp.paragraph_format.space_before = Pt(4)
@@ -188,6 +212,30 @@ def build_report():
             st.paragraph_format.keep_with_next = True
 
     # ------------------ HELPER FUNCTIONS ------------------
+    def add_academic_section(header_title):
+        sec = doc.add_section(WD_SECTION.NEW_PAGE)
+        sec.page_width = Inches(8.27)
+        sec.page_height = Inches(11.69)
+        sec.top_margin = Inches(0.79)
+        sec.bottom_margin = Inches(0.79)
+        sec.left_margin = Inches(0.98)
+        sec.right_margin = Inches(0.79)
+        sec.header.is_linked_to_previous = False
+        for child in list(sec.header._element):
+            sec.header._element.remove(child)
+        hp = sec.header.add_paragraph()
+        hp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        hp.paragraph_format.space_before = Pt(0)
+        hp.paragraph_format.space_after = Pt(2)
+        r = hp.add_run(header_title)
+        r.font.name = "Times New Roman"
+        r.font.size = Pt(8.5)
+        r.font.italic = True
+        r.font.color.rgb = RGBColor(100, 116, 139)
+        # Footer is linked to continue page numbers seamlessly
+        sec.footer.is_linked_to_previous = True
+        return sec
+
     def add_h1(text):
         p = doc.add_paragraph(style='Heading 1')
         pPr = p._element.get_or_add_pPr()
@@ -366,8 +414,8 @@ def build_report():
         center_keywords = [
             "stt", "mã", "số hiệu", "bước", "năm", "tỷ lệ", "khóa", "phiên bản",
             "mức độ", "đánh giá", "thời gian", "kỳ vọng", "đóng góp", "trang", "cf",
-            "bản cũ", "bản mới", "ký tên", "ký xác nhận", "accuracy", "f1", "precision",
-            "recall", "auc", "latency", "sĩ số", "số lớp", "số ca"
+            "hoàn thành", "accuracy", "f1", "precision", "recall", "auc", "latency",
+            "sĩ số", "số lớp", "số ca"
         ]
         col_is_center = []
         for h in headers:
@@ -389,18 +437,22 @@ def build_report():
             cell.width = Inches(widths_in[idx])
             tcPr = cell._element.get_or_add_tcPr()
             tcPr.append(parse_xml(f'<w:tcW {nsdecls("w")} w:w="{widths_dxa[idx]}" w:type="dxa"/>'))
-            if len(text.strip()) <= 15 or col_is_center[idx]:
+            
+            clean_text = text.strip()
+            # Non-breaking spaces for short headers to never wrap single words
+            if len(clean_text) <= 18 or col_is_center[idx]:
+                clean_text = clean_text.replace(" ", "\u00A0")
                 tcPr.append(parse_xml(f'<w:noWrap {nsdecls("w")}/>'))
 
             set_cell_background(cell, "1E3A8A")
-            set_cell_margins(cell, top=90, bottom=90, left=70, right=70)
+            set_cell_margins(cell, top=70, bottom=70, left=60, right=60)
             cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
             p = cell.paragraphs[0]
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             p.paragraph_format.space_before = Pt(0)
             p.paragraph_format.space_after = Pt(0)
             p.paragraph_format.line_spacing = 1.05
-            run = p.add_run(text)
+            run = p.add_run(clean_text)
             run.font.name = "Times New Roman"
             run.font.size = hdr_pt
             run.font.bold = True
@@ -419,11 +471,15 @@ def build_report():
                 tcPr.append(parse_xml(f'<w:tcW {nsdecls("w")} w:w="{widths_dxa[c_idx]}" w:type="dxa"/>'))
 
                 val_str = str(val).strip()
-                if col_is_center[c_idx] and len(val_str) <= 12:
+                # Non-breaking space for labels and versions
+                if any(val_str.startswith(pfx) for pfx in ["Hình ", "Bảng ", "GDPT ", "v0.", "v1.", "v2.", "v3.", "v4."]):
+                    val_str = val_str.replace(" ", "\u00A0")
+
+                if col_is_center[c_idx] and len(val_str) <= 15:
                     tcPr.append(parse_xml(f'<w:noWrap {nsdecls("w")}/>'))
 
                 set_cell_background(cell, bg_color)
-                set_cell_margins(cell, top=70, bottom=70, left=90, right=90)
+                set_cell_margins(cell, top=60, bottom=60, left=70, right=70)
                 cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
                 p = cell.paragraphs[0]
                 p.paragraph_format.space_before = Pt(0)
@@ -438,7 +494,7 @@ def build_report():
                 run = p.add_run(val_str)
                 run.font.name = "Times New Roman"
                 run.font.size = body_pt
-                if c_idx == 0 and any(k in headers[0].lower() for k in ["class", "bảng", "tên", "trụ cột", "hạng mục", "vai trò", "stt", "thuật ngữ", "số hiệu", "mã"]):
+                if c_idx == 0 and any(k in headers[0].lower() for k in ["class", "bảng", "hình", "tên", "trụ cột", "hạng mục", "thuộc tính", "mô hình", "mã", "phiên", "chỉ số", "chuyên đề"]):
                     run.font.bold = True
                     run.font.color.rgb = RGBColor(30, 58, 138)
                 else:
@@ -447,7 +503,6 @@ def build_report():
         p_after = doc.add_paragraph()
         p_after.paragraph_format.space_before = Pt(0)
         p_after.paragraph_format.space_after = Pt(6)
-
     def add_image_with_caption(img_path, caption_text, comment_text=None, width=None, source_tag=None):
         if not os.path.exists(img_path):
             print(f"WARNING: Image not found: {img_path}")
@@ -625,7 +680,7 @@ def build_report():
         r.font.color.rgb = RGBColor(30, 58, 138)
 
     # ==========================================================
-    # BẢNG PHÂN CÔNG NHIỆM VỤ THÀNH VIÊN VÀ ĐÓNG GÓP ĐỒ ÁN
+    # SECTION 1: BẢNG PHÂN CÔNG NHIỆM VỤ THÀNH VIÊN
     # (Được bố trí trang trọng ngay sau trang bìa đề án)
     # ==========================================================
     add_h1("BẢNG PHÂN CÔNG NHIỆM VỤ CỦA THÀNH VIÊN TRONG NHÓM")
@@ -638,311 +693,275 @@ def build_report():
 
     headers_assign = ["STT", "Họ và tên", "Nhiệm vụ phân công cụ thể trong đề án", "Hoàn thành"]
     rows_assign = [
-        ["1", "Đỗ Ngọc Điền", "Khảo sát cấu trúc ma trận đề thi GDPT 2018, thiết kế kiến trúc 5 tầng Clean Architecture, xây dựng CSDL SQLite nhúng 4.070 học sinh, chuẩn hóa Anti-Leakage Data Pipeline", "100%"],
-        ["2", "Dương Tùng Lâm", "Nghiên cứu lý thuyết học máy nhạy chi phí, xây dựng Ma trận chi phí phạt C_ij, huấn luyện và tối ưu hóa 6 mô hình ML, benchmark thực nghiệm đạt Recall Nguy Cơ Cao 93.88% (Zero Fatal Error)", "100%"],
-        ["3", "Trần Thị Thu Hương", "Hiện thực hóa mô-đun giải thích minh bạch XAI (Permutation Feature Importance, trích xuất độ quan trọng 15 biến, biểu đồ Radar đối sánh hồ sơ năng lực học sinh STU_0142), phân tích ca sư phạm cá thể", "100%"],
-        ["4", "Phạm Văn Chiến", "Phát triển nguyên mẫu phần mềm Web Streamlit (Informatics Master UI) gồm 5 phân hệ tương tác thời gian thực, thiết kế thuật toán gom cụm điều phối nguồn lực mở 12 lớp phụ đạo tối ưu", "100%"],
-        ["5", "Vàng A Hứ", "Đảm bảo chất lượng hệ thống: Thiết kế ma trận kiểm thử hệ thống QA theo chuẩn IEEE 829, phân tích lỗi chuyên sâu 69 ca sai lệch (FN, FP, Boundary), thực nghiệm đối chứng hiệu quả vận hành và hoàn thiện báo cáo", "100%"]
+        ["1", "Đỗ Ngọc Điền", "Khảo sát cấu trúc ma trận đề thi GDPT 2018, thiết kế kiến trúc 5 tầng Clean Architecture, xây dựng CSDL SQLite nhúng 4.070 học sinh, chuẩn hóa Anti-Leakage Data Pipeline.", "100%"],
+        ["2", "Dương Tùng Lâm", "Nghiên cứu lý thuyết học máy nhạy chi phí, xây dựng Ma trận chi phí phạt C_ij, huấn luyện và tối ưu Stratified GridSearchCV 6 mô hình ML, viết logic suy diễn nhạy chi phí.", "100%"],
+        ["3", "Trần Thị Thu Hương", "Hiện thực hóa mô-đun giải thích minh bạch XAI (Permutation Feature Importance, trích xuất Top đặc trưng then chốt, biểu đồ Radar cá thể hóa học sinh STU_0142).", "100%"],
+        ["4", "Phạm Văn Chiến", "Phát triển nguyên mẫu phần mềm Web Streamlit (Informatics Master UI) gồm 5 phân hệ tương tác, tích hợp cơ chế mô phỏng What-If và công cụ trực quan hóa thời gian thực.", "100%"],
+        ["5", "Vàng A Hứ", "Đảm bảo chất lượng hệ thống: Thiết kế ma trận kiểm thử hệ thống QA theo chuẩn IEEE 829, phân tích 69 ca sai lệch mô hình, đánh giá tuân thủ khung đạo đức AI Human-in-the-Loop.", "100%"],
     ]
-    add_table(headers_assign, rows_assign, col_widths=[0.50, 1.60, 3.60, 0.80])
-
-    doc.add_page_break()
+    add_table(headers_assign, rows_assign, col_widths=[0.55, 1.65, 3.45, 0.85])
 
     # ==========================================================
-    # LỜI MỞ ĐẦU (ĐỨNG RIÊNG 1 TRANG ĐỘC LẬP)
+    # SECTION 2: LỜI MỞ ĐẦU (ĐỨNG RIÊNG 1 TRANG ĐỘC LẬP)
     # ==========================================================
+    add_academic_section("BÁO CÁO ĐỀ ÁN HỆ CƠ SỞ TRI THỨC — LỜI MỞ ĐẦU")
     add_h1("LỜI MỞ ĐẦU")
     add_para(
         "Chương trình Giáo dục phổ thông 2018 (GDPT 2018) đã đánh dấu bước chuyển dịch mang tính lịch sử của nền giáo dục Việt Nam, "
         "từ nền giáo dục chú trọng truyền thụ kiến thức một chiều sang mô hình phát triển toàn diện năng lực và phẩm chất người học. "
-        "Trong bối cảnh đó, kỳ thi Tốt nghiệp Trung học Phổ thông từ năm 2025 lần đầu tiên đưa môn Tin học vào danh mục các môn thi tốt nghiệp "
+        "Trong bối cảnh đó, kỳ thi Tốt nghiệp Trung học Phổ thông từ năm 2025 lần đầu tiên đưa môn Tin học vào danh mục môn thi tự chọn "
         "với cấu trúc định dạng hoàn toàn mới gồm 3 phần thi phân hóa sâu sắc. Sự thay đổi căn bản này mở ra cơ hội to lớn cho học sinh định hướng "
-        "khối ngành Công nghệ thông tin, song cũng đặt ra áp lực chưa từng có đối với các nhà quản lý giáo dục, giáo viên bộ môn và học sinh lớp 12 "
-        "trước nguy cơ điểm liệt (<= 1.0 điểm), đặc biệt ở mạch kiến thức Khoa học máy tính (CS) và nhóm câu hỏi giải thuật vận dụng cao.",
+        "khối ngành Công nghệ thông tin, song cũng đặt ra áp lực chưa từng có đối với các nhà quản lý giáo dục, giáo viên bộ môn và học sinh "
+        "trước nguy cơ điểm liệt (<= 1.0 điểm), đặc biệt ở mạch kiến thức Khoa học máy tính (CS) và nhóm câu hỏi giải thuật lập trình.",
         bold_prefix="Bối cảnh chuyển dịch sư phạm: "
     )
     add_para(
-        "Thực tiễn quản lý dạy và học tại các trường THPT hiện nay bộc lộ 3 điểm nghẽn nghiêm trọng: điểm trung bình môn học bạ (GPA) bị phẳng hóa "
+        "Thực tiễn quản lý dạy và học tại các trường THPT hiện nay bộc lộ 3 điểm nghẽn nghiêm trọng: điểm trung bình môn phẳng hóa (GPA) "
         "khiến những lỗ hổng chí mạng về tư duy giải thuật bị che lấp sau các điểm số thành phần cao ở kỹ năng ứng dụng văn phòng; "
-        "độ trễ phát hiện rủi ro quá lớn khi các biện pháp phụ đạo truyền thống chỉ được kích hoạt muộn màng sau kỳ thi thử Học kỳ 2; "
-        "cùng với đó là sự quá tải trong khâu rà soát thủ công khi mỗi giáo viên phải theo dõi hàng trăm học sinh với hàng chục đầu điểm phân tán. "
-        "Trước thực trạng đó, việc ứng dụng Trí tuệ nhân tạo (AI) kết hợp Hệ cơ sở tri thức (Knowledge-Based Systems - KBS) để tự động hóa quy trình "
-        "chẩn đoán sớm và hỗ trợ ra quyết định sư phạm là một đòi hỏi cấp bách của thực tiễn giáo dục hiện đại.",
-        bold_prefix="Điểm nghẽn thực tiễn và Tính cấp thiết: "
+        "độ trễ phát hiện rủi ro quá lớn khi kết quả khảo sát chỉ được tổng kết sau kỳ thi học kỳ 1 khiến thời gian can thiệp bị rút ngắn; "
+        "và tình trạng quá tải nghiêm trọng khi giáo viên phải xử lý thủ công hàng nghìn bảng điểm Excel rời rạc để lập danh sách phụ đạo. "
+        "Nếu không có một công cụ số hóa mang tính đột phá, nguy cơ học sinh trượt tốt nghiệp hoặc nhận điểm liệt môn Tin học là hoàn toàn hiện hữu.",
+        bold_prefix="Ba điểm nghẽn thực tiễn: "
     )
     add_para(
-        "Xuất phát từ yêu cầu học thuật của học phần 'Các Hệ Cơ Sở Tri Thức' và mong muốn giải quyết một bài toán giáo dục có ý nghĩa xã hội sâu sắc, "
-        "nhóm tác giả đã lựa chọn và thực hiện đề tài: 'Hệ tri thức và học máy hỗ trợ phân tích ma trận kết quả đánh giá và cảnh báo sớm nguy cơ học tập "
-        "môn Tin học THPT theo Chương trình GDPT 2018'. Đề án xây dựng một khung giải pháp lai ghép khép kín (Closed-Loop Hybrid Framework) "
-        "kết hợp hài hòa giữa Động cơ suy diễn 15 luật sư phạm cốt lõi, Mô hình học máy nhạy chi phí (Cost-Sensitive Learning) giải quyết bất cân xứng rủi ro, "
-        "cùng Công nghệ giải thích minh bạch XAI (Permutation Feature Importance và Biểu đồ Radar năng lực cá thể) nhằm cung cấp bức tranh chẩn đoán "
-        "toàn diện và kịch bản phân bổ nguồn lực ôn tập tối ưu cho từng nhà trường.",
-        bold_prefix="Định hướng tiếp cận và Đóng góp đề tài: "
+        "Nhằm giải quyết triệt để bài toán cấp bách trên, đề tài nghiên cứu “Hệ tri thức và học máy hỗ trợ phân tích ma trận "
+        "kết quả đánh giá và cảnh báo sớm nguy cơ học tập môn Tin học THPT theo Chương trình GDPT 2018” đã được nhóm học viên "
+        "chọn lọc và triển khai trong khuôn khổ học phần Các Hệ Cơ Sở Tri Thức. Đề tài tiếp cận bài toán bằng tư duy kỹ thuật liên ngành: "
+        "kết hợp chặt chẽ giữa Cơ sở tri thức chuyên gia sư phạm (Knowledge-Based Systems - KBS) với Mô hình học máy nhạy chi phí "
+        "(Cost-Sensitive Machine Learning) và Kỹ thuật giải thích minh bạch AI (Explainable AI - XAI), nhằm xây dựng một hệ thống khép kín "
+        "từ sàng lọc nguy cơ sớm, chẩn đoán căn nguyên sa sút đến tự động điều phối nguồn lực can thiệp sư phạm.",
+        bold_prefix="Tính cấp thiết và cách tiếp cận liên ngành: "
     )
     add_para(
-        "Báo cáo tổng kết đồ án được cấu trúc khoa học thành 5 chương trọng tâm, kèm theo hệ thống bảng biểu đối sánh thực nghiệm chi tiết "
-        "trên tập dữ liệu chuẩn hóa 4.070 học sinh qua 8 niên khóa và mã nguồn triển khai đầy đủ. Nhóm nghiên cứu hy vọng công trình này "
-        "sẽ đóng góp một tài liệu tham khảo học thuật chỉn chu, đồng thời mở ra triển vọng ứng dụng thực tế hiệu quả trong công tác quản trị chất lượng "
-        "giáo dục phổ thông tại Việt Nam.",
-        bold_prefix="Cấu trúc và Kỳ vọng ứng dụng: "
+        "Báo cáo tổng kết đề án được kết cấu thành 5 chương nghiên cứu logic và thực nghiệm chuyên sâu: "
+        "Chương 1 tổng quan bài toán và cơ sở lý thuyết nền tảng; "
+        "Chương 2 đặc tả cơ sở tri thức sư phạm, hệ luật sản xuất và kiến trúc CSDL; "
+        "Chương 3 thiết kế mô hình học máy nhạy chi phí và kỹ thuật XAI; "
+        "Chương 4 phân tích chuyên sâu các ca dự đoán sai lệch và đánh giá hiệu quả vận hành; "
+        "Chương 5 hiện thực hóa kiến trúc phần mềm, thuật toán phân bổ lớp phụ đạo và kiểm định đạo đức AI. "
+        "Công trình nghiên cứu kỳ vọng đóng góp một giải pháp công nghệ giáo dục chuẩn mực, khả thi và giàu giá trị thực tiễn.",
+        bold_prefix="Kết cấu tổng thể đề án: "
     )
 
-    doc.add_page_break()
-
     # ==========================================================
-    # LỜI CAM ĐOAN VÀ LỜI CẢM ƠN (ĐỨNG RIÊNG 1 TRANG ĐỘC LẬP)
+    # SECTION 3: MỤC LỤC BÁO CÁO (ĐỨNG RIÊNG TRANG ĐỘC LẬP)
     # ==========================================================
-    add_h1("LỜI CAM ĐOAN VÀ LỜI CẢM ƠN")
-    add_para(
-        "Nhóm nghiên cứu xin cam đoan danh dự rằng công trình nghiên cứu 'Hệ tri thức và học máy hỗ trợ phân tích ma trận kết quả đánh giá "
-        "và cảnh báo sớm nguy cơ học tập môn Tin học THPT theo Chương trình GDPT 2018' là kết quả lao động khoa học độc lập, nghiêm túc "
-        "và trung thực của tập thể học viên Nhóm 02 (Lớp Công nghệ thông tin 20.2). "
-        "Mọi số liệu thực nghiệm, kết quả mô phỏng trên 4.070 học sinh và mã nguồn chương trình đều được xây dựng chặt chẽ dựa trên các cơ sở "
-        "toán học xác suất, lý thuyết học máy nhạy chi phí và quy chuẩn khảo thí GDPT 2018 hiện hành. "
-        "Toàn bộ các tài liệu tham khảo, trích dẫn khoa học và công trình nghiên cứu của các tác giả tiền bối đều được ghi chú xuất xứ "
-        "rõ ràng theo đúng quy chuẩn học thuật quốc tế IEEE.",
-        bold_prefix="Lời cam đoan danh dự: "
-    )
-    add_para(
-        "Nhóm tác giả xin bày tỏ lòng biết ơn sâu sắc nhất tới TS. Trương T. Thu Hà - Giảng viên phụ trách học phần Các Hệ Cơ Sở Tri Thức. "
-        "Cô đã luôn tận tình định hướng phương pháp luận nghiên cứu khoa học, gợi mở những ý tưởng học thuật then chốt về việc kết hợp giữa "
-        "Động cơ suy diễn luật sư phạm với Mô hình học máy nhạy chi phí và Công nghệ giải thích minh bạch XAI, "
-        "đồng thời luôn động viên, khích lệ và tạo mọi điều kiện tốt nhất để nhóm hoàn thiện đề án đạt chất lượng cao nhất.",
-        bold_prefix="Lời tri ân sâu sắc tới Giảng viên hướng dẫn: "
-    )
-    add_para(
-        "Nhóm nghiên cứu cũng xin chân thành cảm ơn các Thầy/Cô trong Viện Đào tạo Sau Đại học và Khoa Công nghệ Thông tin - "
-        "Trường Đại học Kinh doanh và Công nghệ Hà Nội đã tạo môi trường học thuật chuyên sâu và tạo điều kiện thuận lợi "
-        "cho nhóm trong suốt quá trình theo học và nghiên cứu học phần.",
-        bold_prefix="Lời cảm ơn tới Nhà trường và Viện Sau Đại học: "
-    )
-    add_para(
-        "Dù đã nỗ lực hết mình với tinh thần nghiên cứu nghiêm túc nhất, đề tài chắc chắn khó tránh khỏi những thiếu sót nhất định. "
-        "Nhóm tác giả rất mong nhận được những ý kiến đóng góp, chỉ bảo quý báu của Quý Thầy/Cô trong Hội đồng chấm đề án "
-        "để công trình nghiên cứu ngày càng hoàn thiện và có giá trị ứng dụng cao hơn.",
-        bold_prefix="Lời cảm ơn chân thành: "
-    )
-
-    doc.add_page_break()
-
-    # ==========================================================
-    # MỤC LỤC BÁO CÁO (ĐỨNG RIÊNG TRANG ĐỘC LẬP)
-    # ==========================================================
+    add_academic_section("BÁO CÁO ĐỀ ÁN HỆ CƠ SỞ TRI THỨC — MỤC LỤC BÁO CÁO")
     add_h1("MỤC LỤC BÁO CÁO (TABLE OF CONTENTS)")
-    add_para("Chi tiết cấu trúc 5 chương nội dung đề án, các danh mục kỹ thuật và phụ lục toàn văn:", bold_prefix="Cấu trúc tổng thể đề án: ")
+    add_para("Chi tiết cấu trúc 5 chương nội dung đề án, các danh mục kỹ thuật và phụ lục toàn văn:", bold_prefix="Cấu trúc văn bản: ")
 
     # Front matter
-    add_toc_entry("BẢNG PHÂN CÔNG NHIỆM VỤ THÀNH VIÊN TRONG NHÓM", "2", level=1)
+    add_toc_entry("BẢNG PHÂN CÔNG NHIỆM VỤ CỦA THÀNH VIÊN TRONG NHÓM", "2", level=1)
     add_toc_entry("LỜI MỞ ĐẦU", "3", level=1)
-    add_toc_entry("LỜI CAM ĐOAN VÀ LỜI CẢM ƠN", "4", level=1)
-    add_toc_entry("MỤC LỤC BÁO CÁO (TABLE OF CONTENTS)", "5", level=1)
-    add_toc_entry("DANH MỤC TỪ VIẾT TẮT VÀ LỊCH SỬ PHIÊN BẢN", "7", level=1)
-    add_toc_entry("DANH MỤC BẢNG BIỂU VÀ HÌNH VẼ KỸ THUẬT", "8", level=1)
-    add_toc_entry("TÓM TẮT BÁO CÁO (ABSTRACT)", "9", level=1)
+    add_toc_entry("MỤC LỤC BÁO CÁO (TABLE OF CONTENTS)", "4", level=1)
+    add_toc_entry("DANH MỤC KÝ HIỆU, TỪ VIẾT TẮT VÀ LỊCH SỬ PHIÊN BẢN", "6", level=1)
+    add_toc_entry("DANH MỤC HÌNH VẼ VÀ BẢNG BIỂU KỸ THUẬT", "7", level=1)
+    add_toc_entry("TÓM TẮT BÁO CÁO (ABSTRACT)", "8", level=1)
 
     # Chương 1
-    add_toc_entry("CHƯƠNG 1. TỔNG QUAN BÀI TOÁN VÀ CƠ SỞ LÝ THUYẾT", "10", level=1)
-    add_toc_entry("1.1. Đặt vấn đề và tính cấp thiết của đề tài", "10", level=2)
-    add_toc_entry("1.1.1. Bối cảnh đổi mới khảo thí môn Tin học theo GDPT 2018", "10", level=3)
-    add_toc_entry("1.1.2. Ba điểm nghẽn của phương pháp đánh giá truyền thống tại trường THPT", "12", level=3)
-    add_toc_entry("1.1.3. Mục tiêu nghiên cứu, đối tượng và phạm vi hệ thống", "14", level=3)
-    add_toc_entry("1.2. Tổng quan các nghiên cứu liên quan (Literature Review)", "15", level=2)
-    add_toc_entry("1.2.1. Khai phá dữ liệu giáo dục (Educational Data Mining - EDM)", "15", level=3)
-    add_toc_entry("1.2.2. Hệ cơ sở tri thức lai ghép (Hybrid Knowledge-Based Systems)", "17", level=3)
-    add_toc_entry("1.2.3. Khoảng trống nghiên cứu (Research Gaps)", "19", level=3)
-    add_toc_entry("1.3. Cơ sở lý thuyết nền tảng", "20", level=2)
-    add_toc_entry("1.3.1. Biểu diễn tri thức và Động cơ suy diễn", "20", level=3)
-    add_toc_entry("1.3.2. Học máy nhạy chi phí (Cost-Sensitive Learning)", "22", level=3)
-    add_toc_entry("1.3.3. Các thuật toán học tập tổ hợp (Ensemble Learning)", "24", level=3)
-    add_toc_entry("1.3.4. Trí tuệ nhân tạo có thể giải thích (Explainable AI - XAI)", "26", level=3)
+    add_toc_entry("CHƯƠNG 1. TỔNG QUAN BÀI TOÁN VÀ CƠ SỞ LÝ THUYẾT", "9", level=1)
+    add_toc_entry("1.1. Đặt vấn đề và tính cấp thiết của đề tài", "9", level=2)
+    add_toc_entry("1.1.1. Bối cảnh đổi mới khảo thí môn Tin học theo GDPT 2018", "9", level=3)
+    add_toc_entry("1.1.2. Ba điểm nghẽn của phương pháp đánh giá truyền thống tại trường THPT", "11", level=3)
+    add_toc_entry("1.1.3. Mục tiêu nghiên cứu, đối tượng và phạm vi hệ thống", "13", level=3)
+    add_toc_entry("1.2. Tổng quan các nghiên cứu liên quan (Literature Review)", "14", level=2)
+    add_toc_entry("1.2.1. Khai phá dữ liệu giáo dục (Educational Data Mining - EDM)", "14", level=3)
+    add_toc_entry("1.2.2. Hệ cơ sở tri thức lai ghép (Hybrid Knowledge-Based Systems)", "16", level=3)
+    add_toc_entry("1.2.3. Khoảng trống nghiên cứu (Research Gaps)", "18", level=3)
+    add_toc_entry("1.3. Cơ sở lý thuyết nền tảng", "19", level=2)
+    add_toc_entry("1.3.1. Biểu diễn tri thức và Động cơ suy diễn", "19", level=3)
+    add_toc_entry("1.3.2. Học máy nhạy chi phí (Cost-Sensitive Learning)", "21", level=3)
+    add_toc_entry("1.3.3. Các thuật toán học tập tổ hợp (Ensemble Learning)", "23", level=3)
+    add_toc_entry("1.3.4. Trí tuệ nhân tạo có thể giải thích (Explainable AI - XAI)", "25", level=3)
 
     # Chương 2
-    add_toc_entry("CHƯƠNG 2. XÂY DỰNG CƠ SỞ TRI THỨC SƯ PHẠM VÀ DỮ LIỆU ĐẦU VÀO", "28", level=1)
-    add_toc_entry("2.1. Kỹ thuật thu thập và mô hình hóa tri thức miền (Domain Knowledge Engineering)", "28", level=2)
-    add_toc_entry("2.1.1. Ánh xạ ma trận năng lực GDPT 2018", "28", level=3)
-    add_toc_entry("2.1.2. Phân tích độ nhạy rủi ro điểm liệt", "30", level=3)
-    add_toc_entry("2.2. Thiết kế Cơ sở tri thức luật chuyên gia (Knowledge Base & Inference Engine)", "31", level=2)
-    add_toc_entry("2.2.1. Hệ thống hóa bộ luật sản xuất sư phạm (Production Rules)", "31", level=3)
-    add_toc_entry("2.2.2. Cơ chế kết hợp độ tin cậy Certainty Factor (CF) và Kiến trúc lai ghép", "34", level=3)
-    add_toc_entry("2.3. Đặc tả không gian 15 đặc trưng đầu vào và Kiến trúc CSDL SQLite", "36", level=2)
-    add_toc_entry("2.3.1. Từ điển dữ liệu 15 biến đặc trưng đầu vào", "36", level=3)
-    add_toc_entry("2.3.2. Thiết kế lược đồ CSDL quan hệ nhúng (thpt_informatics.db)", "38", level=3)
-    add_toc_entry("2.4. Phương pháp sinh dữ liệu mô phỏng & Pipeline chống rò rỉ dữ liệu", "40", level=2)
-    add_toc_entry("2.4.1. Quy trình sinh dữ liệu mô phỏng chuẩn thống kê (4.070 học sinh)", "40", level=3)
-    add_toc_entry("2.4.2. Quy trình tiền xử lý chống rò rỉ dữ liệu 4 bước (Anti-Leakage Data Pipeline)", "42", level=3)
+    add_toc_entry("CHƯƠNG 2. XÂY DỰNG CƠ SỞ TRI THỨC SƯ PHẠM VÀ DỮ LIỆU ĐẦU VÀO", "27", level=1)
+    add_toc_entry("2.1. Khung tri thức miền môn Tin học THPT theo GDPT 2018", "27", level=2)
+    add_toc_entry("2.1.1. Cấu trúc ma trận đề minh họa và phân bổ điểm số tốt nghiệp", "27", level=3)
+    add_toc_entry("2.1.2. Mối quan hệ liên đới giữa 3 mạch kiến thức (CS, ICT, DL)", "30", level=3)
+    add_toc_entry("2.1.3. Cơ chế lan truyền rủi ro và các mẫu hình sa sút điển hình", "32", level=3)
+    add_toc_entry("2.2. Xây dựng hệ luật chuyên gia sư phạm (KBS Rules Engine)", "33", level=2)
+    add_toc_entry("2.2.1. Phương pháp thu thập và tinh chế tri thức từ chuyên gia", "33", level=3)
+    add_toc_entry("2.2.2. Hệ thống 15 luật sản xuất cốt lõi (Production Rules)", "35", level=3)
+    add_toc_entry("2.2.3. Cơ chế suy diễn tiến tích hợp hệ số tin cậy (Certainty Factor)", "38", level=3)
+    add_toc_entry("2.3. Thiết kế không gian 15 đặc trưng và CSDL quan hệ", "40", level=2)
+    add_toc_entry("2.3.1. Danh mục 15 thuộc tính đầu vào và từ điển dữ liệu chuẩn", "40", level=3)
+    add_toc_entry("2.3.2. Lược đồ CSDL nhúng SQLite (thpt_informatics.db)", "43", level=3)
+    add_toc_entry("2.4. Tập dữ liệu mô phỏng và Quy trình tiền xử lý dữ liệu chuẩn hóa", "45", level=2)
+    add_toc_entry("2.4.1. Quy trình sinh dữ liệu mô phỏng 4.070 học sinh qua 8 niên khóa", "45", level=3)
+    add_toc_entry("2.4.2. Phân bố nhãn mục tiêu và hiện tượng mất cân bằng lớp", "47", level=3)
+    add_toc_entry("2.4.3. Pipeline tiền xử lý và chiến lược phân chia chống rò rỉ dữ liệu (Anti-Leakage)", "49", level=3)
 
     # Chương 3
-    add_toc_entry("CHƯƠNG 3. THIẾT KẾ MÔ HÌNH HỌC MÁY VÀ TỐI ƯU HÓA NHẠY CHI PHÍ", "44", level=1)
-    add_toc_entry("3.1. Phát biểu bài toán học máy và Thiết kế Ma trận chi phí (Cost Matrix)", "44", level=2)
-    add_toc_entry("3.1.1. Định nghĩa không gian bài toán", "44", level=3)
-    add_toc_entry("3.1.2. Xây dựng Ma trận chi phí phạt bất đối xứng", "45", level=3)
-    add_toc_entry("3.2. Thiết kế kiến trúc 6 mô hình thực nghiệm", "47", level=2)
-    add_toc_entry("3.2.1. Nhóm mô hình cơ sở (Baselines)", "47", level=3)
-    add_toc_entry("3.2.2. Nhóm mô hình học tập tổ hợp cải tiến (Ensemble Models)", "49", level=3)
-    add_toc_entry("3.3. Quy trình huấn luyện và tinh chỉnh siêu tham số", "51", level=2)
-    add_toc_entry("3.3.1. Thiết lập kiểm thử chéo phân tầng (Stratified 5-Fold Cross-Validation)", "51", level=3)
-    add_toc_entry("3.3.2. Tối ưu hóa siêu tham số qua GridSearchCV", "52", level=3)
-    add_toc_entry("3.4. Kết quả thực nghiệm và Phân tích giải thích XAI", "54", level=2)
-    add_toc_entry("3.4.1. Bảng tổng hợp đối sánh chỉ số trên tập Test độc lập (N = 611)", "54", level=3)
-    add_toc_entry("3.4.2. Phân tích Ma trận nhầm lẫn (Confusion Matrix) của mô hình tối ưu", "56", level=3)
-    add_toc_entry("3.4.3. Giải thích mô hình toàn cục (Global XAI – Permutation Feature Importance)", "58", level=3)
-    add_toc_entry("3.4.4. Giải thích mô hình cục bộ (Local XAI – Biểu đồ Radar hồ sơ năng lực)", "60", level=3)
+    add_toc_entry("CHƯƠNG 3. THIẾT KẾ MÔ HÌNH HỌC MÁY VÀ TỐI ƯU HÓA NHẠY CHI PHÍ", "52", level=1)
+    add_toc_entry("3.1. Thiết kế hàm mục tiêu nhạy chi phí (Cost Matrix C_ij)", "52", level=2)
+    add_toc_entry("3.1.1. Bất đối xứng rủi ro sư phạm: Bỏ sót nguy cơ (FN) vs Cảnh báo nhầm (FP)", "52", level=3)
+    add_toc_entry("3.1.2. Thiết lập Ma trận phạt chi phí sai số 3x3", "54", level=3)
+    add_toc_entry("3.1.3. Tích hợp ma trận chi phí vào huấn luyện và ngưỡng quyết định Bayes", "56", level=3)
+    add_toc_entry("3.2. Không gian thuật toán học máy khảo sát", "57", level=2)
+    add_toc_entry("3.2.1. Nhóm mô hình Baseline truyền thống (ZeroR, Decision Tree, Logistic Regression)", "57", level=3)
+    add_toc_entry("3.2.2. Nhóm mô hình học tập tổ hợp Bagging: Random Forest tối ưu", "59", level=3)
+    add_toc_entry("3.2.3. Nhóm mô hình học tập tổ hợp Boosting: XGBoost và LightGBM", "61", level=3)
+    add_toc_entry("3.3. Quy trình tối ưu siêu tham số thực nghiệm", "63", level=2)
+    add_toc_entry("3.3.1. Chiến lược Stratified 5-Fold Cross-Validation", "63", level=3)
+    add_toc_entry("3.3.2. Không gian tìm kiếm tham số GridSearch cho từng mô hình", "65", level=3)
+    add_toc_entry("3.4. Kết quả thực nghiệm đối sánh mô hình", "66", level=2)
+    add_toc_entry("3.4.1. Bảng tổng hợp các chỉ số hiệu năng trên tập kiểm thử độc lập (N = 611)", "66", level=3)
+    add_toc_entry("3.4.2. Phân tích ma trận nhầm lẫn (Confusion Matrix) của Random Forest tối ưu", "68", level=3)
+    add_toc_entry("3.4.3. Minh bạch hóa mô hình với Permutation Feature Importance và Biểu đồ Radar", "70", level=3)
 
     # Chương 4
-    add_toc_entry("CHƯƠNG 4. PHÂN TÍCH LỖI CHUYÊN SÂU VÀ ĐÁNH GIÁ HIỆU QUẢ VẬN HÀNH", "62", level=1)
-    add_toc_entry("4.1. Phân tích lỗi chuyên sâu (In-Depth Error Analysis)", "62", level=2)
-    add_toc_entry("4.1.1. Thống kê tổng hợp các ca dự đoán sai", "62", level=3)
-    add_toc_entry("4.1.2. Phân loại nguyên nhân gốc rễ (Root Cause Analysis)", "64", level=3)
-    add_toc_entry("4.1.3. Giải pháp khắc phục kỹ thuật", "66", level=3)
-    add_toc_entry("4.2. Thực nghiệm đối chứng hiệu quả vận hành (Operational Benchmark)", "67", level=2)
-    add_toc_entry("4.2.1. Thiết lập kịch bản thực nghiệm", "67", level=3)
-    add_toc_entry("4.2.2. Đối sánh toàn diện: Quy trình Excel thủ công vs Hệ tri thức AI", "69", level=3)
+    add_toc_entry("CHƯƠNG 4. PHÂN TÍCH LỖI CHUYÊN SÂU VÀ ĐÁNH GIÁ HIỆU QUẢ VẬN HÀNH", "73", level=1)
+    add_toc_entry("4.1. Phân tích lỗi chuyên sâu (In-Depth Error Analysis)", "73", level=2)
+    add_toc_entry("4.1.1. Phân rã 69 ca dự đoán sai lệch trên tập Test", "73", level=3)
+    add_toc_entry("4.1.2. Phân tích nhóm lỗi ranh giới (Borderline Cases giữa Nguy cơ và Theo dõi)", "75", level=3)
+    add_toc_entry("4.1.3. Phân tích các trường hợp học sinh 'học lệch' và 'ngụy trang GPA'", "77", level=3)
+    add_toc_entry("4.1.4. Đề xuất các biện pháp giảm thiểu sai số trong phiên bản kế tiếp", "78", level=3)
+    add_toc_entry("4.2. Đánh giá hiệu quả vận hành và đối sánh baseline thực tế", "80", level=2)
+    add_toc_entry("4.2.1. Đối sánh quy trình thủ công (Excel) với Hệ tri thức AI đề xuất", "80", level=3)
+    add_toc_entry("4.2.2. Đo lường độ trễ suy luận và khả năng mở rộng quy mô hệ thống", "82", level=3)
 
     # Chương 5
-    add_toc_entry("CHƯƠNG 5. KIẾN TRÚC PHẦN MỀM, THUẬT TOÁN PHÂN BỔ NGUỒN LỰC VÀ ĐẠO ĐỨC AI", "71", level=1)
-    add_toc_entry("5.1. Kiến trúc hệ thống tổng thể 5 tầng công nghệ (End-to-End Architecture)", "71", level=2)
-    add_toc_entry("5.1.1. Sơ đồ kiến trúc và luồng dữ liệu đầu cuối", "71", level=3)
-    add_toc_entry("5.1.2. Đặc tả chi tiết 5 tầng kiến trúc và Mẫu thiết kế GoF", "73", level=3)
-    add_toc_entry("5.2. Thuật toán gom cụm và lập kịch bản phân bổ nguồn lực ôn tập", "75", level=2)
-    add_toc_entry("5.2.1. Phát biểu bài toán phân bổ nguồn lực sư phạm", "75", level=3)
-    add_toc_entry("5.2.2. Mã giả (Pseudocode) thuật toán gom cụm kết hợp luật & XAI", "76", level=3)
-    add_toc_entry("5.2.3. Kịch bản phân bổ nguồn lực thực tế", "78", level=3)
-    add_toc_entry("5.3. Thiết kế nguyên mẫu phần mềm Web (UI/UX Prototype)", "80", level=2)
-    add_toc_entry("5.3.1. Kiến trúc 5 phân hệ chức năng (Informatics Master UI)", "80", level=3)
-    add_toc_entry("5.3.2. Minh họa kịch bản sử dụng (Use-Case Walkthrough)", "82", level=3)
-    add_toc_entry("5.4. Khung quản trị rủi ro và Đạo đức AI trong giáo dục", "84", level=2)
-    add_toc_entry("5.4.1. Nguyên tắc Con người giữ quyền quyết định (Human-in-the-Loop)", "84", level=3)
-    add_toc_entry("5.4.2. Bảo mật thông tin và Chống dán nhãn định kiến (Anti-Stigmatization)", "85", level=3)
-    add_toc_entry("5.4.3. Cơ chế cập nhật động và Xóa nhãn cảnh báo (Dynamic Retraining & Unlabeling)", "86", level=3)
-    add_toc_entry("5.5. Kiểm thử hệ thống và Đánh giá chất lượng phần mềm (System Testing & QA theo IEEE Std 829-2008)", "87", level=2)
+    add_toc_entry("CHƯƠNG 5. KIẾN TRÚC PHẦN MỀM, ĐIỀU PHỐI NGUỒN LỰC VÀ ĐẠO ĐỨC AI", "84", level=1)
+    add_toc_entry("5.1. Thiết kế kiến trúc phần mềm hướng dịch vụ (Clean Architecture)", "84", level=2)
+    add_toc_entry("5.1.1. Sơ đồ khối 5 tầng: UI -> Application -> Domain -> Infrastructure -> Data", "84", level=3)
+    add_toc_entry("5.1.2. Áp dụng các mẫu thiết kế hướng đối tượng (GoF Patterns)", "86", level=3)
+    add_toc_entry("5.2. Thuật toán phân bổ tự động nguồn lực ôn tập và kế hoạch phụ đạo", "87", level=2)
+    add_toc_entry("5.2.1. Phân cụm học sinh nguy cơ cao vào 3 chuyên đề bồi dưỡng trọng điểm", "87", level=3)
+    add_toc_entry("5.2.2. Kế hoạch chi tiết phân bổ 12 lớp phụ đạo và định mức ngân sách sư phạm", "89", level=3)
+    add_toc_entry("5.3. Hiện thực hóa ứng dụng nguyên mẫu Web Streamlit (Informatics Master UI)", "91", level=2)
+    add_toc_entry("5.3.1. Kiến trúc phân hệ giao diện: Dashboard, Nhập liệu, XAI Radar, What-If", "91", level=3)
+    add_toc_entry("5.3.2. Quy trình người dùng tương tác khép kín từ dự báo đến can thiệp sư phạm", "93", level=3)
+    add_toc_entry("5.4. Đảm bảo chất lượng hệ thống và Đạo đức AI trong giáo dục", "95", level=2)
+    add_toc_entry("5.4.1. Ma trận 25 ca kiểm thử hệ thống QA theo chuẩn IEEE Std 829-2008", "95", level=3)
+    add_toc_entry("5.4.2. Khung tuân thủ đạo đức AI: Human-in-the-Loop, Minh bạch và Bảo mật dữ liệu", "97", level=3)
 
     # Kết luận & Phụ lục
-    add_toc_entry("KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN", "89", level=1)
-    add_toc_entry("1. Tổng kết các kết quả đạt được", "89", level=2)
-    add_toc_entry("2. Những hạn chế còn tồn tại", "90", level=2)
-    add_toc_entry("3. Hướng phát triển tiếp theo", "91", level=2)
-    add_toc_entry("TÀI LIỆU THAM KHẢO VÀ PHỤ LỤC", "92", level=1)
-    add_toc_entry("Tài liệu tham khảo (Chuẩn IEEE)", "92", level=2)
-    add_toc_entry("Phụ lục A: Toàn văn bộ 15 luật sản xuất sư phạm (Production Rules)", "95", level=2)
-    add_toc_entry("Phụ lục B: Mã nguồn cốt lõi của quy trình tiền xử lý chống rò rỉ dữ liệu", "98", level=2)
-    add_toc_entry("Phụ lục C: Hướng dẫn cài đặt môi trường và vận hành ứng dụng Web Streamlit", "101", level=2)
-
-    doc.add_page_break()
+    add_toc_entry("KẾT LUẬN VÀ KIẾN NGHỊ", "99", level=1)
+    add_toc_entry("1. Tổng kết các kết quả đạt được", "99", level=2)
+    add_toc_entry("2. Những hạn chế còn tồn tại", "100", level=2)
+    add_toc_entry("3. Hướng phát triển tiếp theo", "101", level=2)
+    add_toc_entry("TÀI LIỆU THAM KHẢO VÀ PHỤ LỤC", "102", level=1)
+    add_toc_entry("Tài liệu tham khảo (Chuẩn IEEE)", "102", level=2)
+    add_toc_entry("Phụ lục A: Toàn văn bộ 15 luật sản xuất sư phạm (Production Rules)", "105", level=2)
+    add_toc_entry("Phụ lục B: Mã nguồn cốt lõi của quy trình tiền xử lý chống rò rỉ dữ liệu", "108", level=2)
+    add_toc_entry("Phụ lục C: Hướng dẫn cài đặt môi trường và vận hành ứng dụng Web Streamlit", "111", level=2)
 
     # ==========================================================
-    # DANH MỤC KÝ HIỆU, TỪ VIẾT TẮT VÀ LỊCH SỬ PHIÊN BẢN
+    # SECTION 4: DANH MỤC KÝ HIỆU, TỪ VIẾT TẮT VÀ LỊCH SỬ PHIÊN BẢN
     # ==========================================================
+    add_academic_section("BÁO CÁO ĐỀ ÁN HỆ CƠ SỞ TRI THỨC — DANH MỤC TỪ VIẾT TẮT & LỊCH SỬ TÀI LIỆU")
     add_h1("DANH MỤC KÝ HIỆU, TỪ VIẾT TẮT VÀ LỊCH SỬ PHIÊN BẢN")
 
     add_h2("1. Danh mục ký hiệu, thuật ngữ và từ viết tắt")
-    headers_abbr = ["Ký hiệu", "Thuật ngữ Tiếng Anh", "Ý nghĩa và vai trò chuyên ngành"]
+    headers_abbr = ["Ký hiệu", "Thuật ngữ Tiếng Anh", "Ý nghĩa và vai trò chuyên ngành trong hệ thống"]
     rows_abbr = [
         ["KBS", "Knowledge-Based Systems", "Hệ cơ sở tri thức sử dụng tập luật sản xuất IF-THEN để suy diễn chẩn đoán sư phạm."],
         ["ML", "Machine Learning", "Học máy - Nhánh AI học mẫu hình từ dữ liệu quá khứ để đưa ra quyết định dự báo."],
-        ["XAI", "Explainable Artificial Intelligence", "Trí tuệ nhân tạo có thể giải thích, minh bạch hóa cơ chế gán nhãn cho chuyên gia."],
+        ["XAI", "Explainable Artificial Intelligence", "Trí tuệ nhân tạo có thể giải thích, minh bạch hóa cơ chế gán nhãn dự báo."],
         ["GDPT 2018", "General Education Program 2018", "Chương trình Giáo dục phổ thông 2018 định hướng phát triển phẩm chất và năng lực."],
         ["CS", "Computer Science", "Mạch kiến thức Khoa học máy tính (Lập trình, thuật toán, tư duy giải quyết vấn đề)."],
-        ["ICT", "Information & Communication Tech", "Mạch kiến thức Tin học ứng dụng (Phần mềm văn phòng, CSDL, thiết bị mạng)."],
+        ["ICT", "Info. & Comm. Technologies", "Mạch kiến thức Tin học ứng dụng (Phần mềm văn phòng, CSDL, thiết bị mạng)."],
         ["DL", "Digital Literacy", "Mạch kiến thức Đạo đức, pháp luật và văn hóa số (Bảo mật, an toàn thông tin mạng)."],
-        ["FN", "False Negative (Bỏ sót)", "Dự đoán An Toàn nhưng thực tế học sinh gặp Nguy Cơ Cao (Lỗi nghiêm trọng nhất)."],
+        ["DSS", "Decision Support System", "Hệ thống hỗ trợ ra quyết định sư phạm - AI đóng vai trò cố vấn, giáo viên quyết định."],
+        ["LMS", "Learning Management System", "Hệ thống quản lý học tập trực tuyến ghi nhận chỉ số làm bài tập về nhà."],
+        ["FN", "False Negative (Lỗi bỏ sót)", "Dự đoán An Toàn nhưng thực tế học sinh gặp Nguy Cơ Cao (Lỗi nghiêm trọng nhất)."],
         ["FP", "False Positive (Cảnh báo nhầm)", "Dự đoán Nguy Cơ Cao nhưng thực tế học sinh An Toàn (Lãng phí tài nguyên ôn tập)."],
         ["PoC", "Proof of Concept", "Minh chứng khả thi kỹ thuật của giải pháp phần mềm trước khi triển khai thực tế."],
         ["PFI", "Permutation Feature Importance", "Thuật toán lượng hóa độ suy giảm hiệu năng mô hình khi xáo trộn giá trị đặc trưng."],
         ["GOSS", "Gradient-based One-Side Sampling", "Kỹ thuật tối ưu hóa LightGBM giữ lại mẫu gradient lớn và lấy mẫu ngẫu nhiên gradient nhỏ."],
-        ["EFB", "Exclusive Feature Bundling", "Kỹ thuật bó các đặc trưng loại trừ lẫn nhau để tăng tốc độ huấn luyện."]
+        ["EFB", "Exclusive Feature Bundling", "Kỹ thuật bó các đặc trưng loại trừ lẫn nhau để tăng tốc độ huấn luyện mô hình."],
     ]
-    add_table(headers_abbr, rows_abbr, col_widths=[1.10, 2.30, 3.10])
+    add_table(headers_abbr, rows_abbr, col_widths=[1.20, 2.50, 2.80])
 
     # Lịch sử thay đổi tài liệu (gọn gàng 3 cột, không bị xô lệch)
     add_h2("2. Lịch sử cập nhật tài liệu (Revision History)")
-    add_para("Bảng ghi nhận quá trình nâng cấp và hoàn thiện tài liệu đề án qua các phiên bản:", bold_prefix="Lịch sử phiên bản: ")
+    add_para("Bảng ghi nhận quá trình nâng cấp và hoàn thiện tài liệu đề án qua các phiên bản:", bold_prefix="Lịch sử phát triển: ")
     headers_rev = ["Phiên bản", "Thời gian", "Nội dung cập nhật & Mô tả chi tiết thay đổi"]
     rows_rev = [
-        ["v0.1", "15/10/2026", "Khởi tạo khung dàn ý 5 chương, đặc tả 15 biến đầu vào GDPT 2018, thiết kế CSDL SQLite 4.070 HS"],
-        ["v1.0", "28/10/2026", "Đặc tả chi tiết 20 Yêu cầu Chức năng [YC-01 đến YC-20], chuẩn FURPS+ và ma trận truy vết"],
-        ["v1.5", "10/11/2026", "Tích hợp mô hình học máy tổ hợp Ensemble (Random Forest, XGBoost, LightGBM) và Ma trận chi phí phạt C_ij"],
-        ["v2.0", "22/11/2026", "Bổ sung mô-đun giải thích XAI (Permutation Importance, Radar Chart cá thể), UI Streamlit và 25 Test Cases"],
-        ["v3.0", "23/11/2026", "Mở rộng cơ sở toán học Bayes, hệ thống 15 luật sư phạm KBS, phân tích 69 ca sai lệch và 3 Phụ lục toàn văn"],
-        ["v4.0", "24/11/2026", "Chuẩn hóa học thuật cao học: cập nhật GVHD TS. Trương T. Thu Hà, Mục lục dot-leader và bố cục trang độc lập"]
+        ["v0.1", "15/10/2026", "Khởi tạo khung dàn ý 5 chương, đặc tả 15 biến đầu vào GDPT 2018, thiết kế CSDL SQLite 4.070 học sinh."],
+        ["v1.0", "28/10/2026", "Đặc tả chi tiết 20 Yêu cầu Chức năng [YC-01 đến YC-20], chuẩn FURPS+ và ma trận truy vết Traceability Matrix."],
+        ["v1.5", "10/11/2026", "Tích hợp mô hình học máy tổ hợp Ensemble (Random Forest, XGBoost, LightGBM) và Ma trận chi phí phạt C_ij."],
+        ["v2.0", "22/11/2026", "Bổ sung mô-đun giải thích XAI (Permutation Importance, Radar Chart cá thể), UI Streamlit và 25 Test Cases."],
+        ["v3.0", "23/11/2026", "Mở rộng cơ sở toán học Bayes, hệ thống 15 luật sư phạm KBS, phân tích 69 ca sai lệch và Clean Architecture 5 tầng."],
+        ["v4.0", "24/11/2026", "Chuẩn hóa học thuật cao học: cập nhật GVHD TS. Trương T. Thu Hà, Mục lục dot-leader và bố cục các danh mục."],
+        ["v5.0", "25/11/2026", "Tái cấu trúc Front Matter: tách độc lập Lời mở đầu, Phân công nhiệm vụ, Mục lục có Section Header riêng biệt, chuẩn hóa bố cục tinh giản theo yêu cầu học phần."],
     ]
     add_table(headers_rev, rows_rev, col_widths=[1.10, 1.20, 4.20])
 
-    doc.add_page_break()
-
     # ==========================================================
-    # DANH MỤC BẢNG BIỂU VÀ HÌNH VẼ KỸ THUẬT (RIÊNG TRANG ĐỘC LẬP)
+    # SECTION 5: DANH MỤC HÌNH VẼ VÀ BẢNG BIỂU KỸ THUẬT
     # ==========================================================
-    add_h1("DANH MỤC BẢNG BIỂU VÀ HÌNH VẼ KỸ THUẬT")
+    add_academic_section("BÁO CÁO ĐỀ ÁN HỆ CƠ SỞ TRI THỨC — DANH MỤC HÌNH VẼ & BẢNG BIỂU")
+    add_h1("DANH MỤC HÌNH VẼ VÀ BẢNG BIỂU KỸ THUẬT")
 
-    add_h2("1. Danh mục các biểu đồ và sơ đồ kỹ thuật:")
-    headers_fig = ["Số hiệu", "Tên biểu đồ & sơ đồ kỹ thuật", "Nội dung minh họa kỹ thuật", "Trang"]
+    add_h2("1. Danh mục các biểu đồ và hình vẽ kỹ thuật")
+    headers_fig = ["Số hiệu", "Tên biểu đồ và hình vẽ kỹ thuật", "Trang"]
     rows_fig = [
-        ["Hình 2.1", "Phân bố tỷ lệ nhãn rủi ro học tập trên 4.070 học sinh", "Tỷ lệ 37.0% An Toàn, 22.9% Cần Theo Dõi và 40.1% Nguy Cơ Cao", "41"],
-        ["Hình 3.1", "Đối sánh trực quan hiệu năng đa mô hình trên tập Test (N = 611)", "So sánh cột đa chỉ số: Accuracy, Precision, Recall Nguy Cơ và Macro F1", "54"],
-        ["Hình 3.2", "Ma trận nhầm lẫn (Confusion Matrix) mô hình Random Forest tối ưu", "Ma trận phân loại 3 lớp: Triệt tiêu hoàn toàn lỗi bỏ sót Fatal False Negative", "56"],
-        ["Hình 3.3", "Xếp hạng độ quan trọng 15 đặc trưng qua thuật toán Permutation Importance", "Lượng hóa mức sụt giảm Macro F1 khi xáo trộn từng biến: score_hk2, score_topic_cs đứng đầu", "58"],
-        ["Hình 3.4", "Biểu đồ Radar bóc tách hồ sơ năng lực học sinh STU_0142", "So sánh đa chiều giữa điểm học sinh cá thể và chuẩn an toàn sư phạm", "60"],
-        ["Hình 4.1", "Biểu đồ đối sánh baseline vận hành: Thủ công Excel vs Hệ tri thức AI", "Thời gian rút ngắn từ 25 giờ xuống 0.18 giây và mở rộng phân tích 15 chiều", "69"]
+        ["Hình 2.1", "Biểu đồ phân bố 3 nhóm nhãn mục tiêu (N = 4.070 học sinh)", "33"],
+        ["Hình 3.1", "Biểu đồ đối sánh hiệu năng đa mô hình học máy (Accuracy, Macro F1, Recall)", "42"],
+        ["Hình 3.2", "Ma trận nhầm lẫn (Confusion Matrix) mô hình Random Forest tối ưu", "43"],
+        ["Hình 3.3", "Xếp hạng độ quan trọng đặc trưng theo Permutation Feature Importance", "46"],
+        ["Hình 3.4", "Biểu đồ Radar hồ sơ năng lực học sinh rủi ro cao (Mã STU_0142)", "47"],
+        ["Hình 4.1", "Biểu đồ đối sánh baseline vận hành: Quy trình thủ công vs Hệ tri thức AI", "50"],
     ]
-    add_table(headers_fig, rows_fig, col_widths=[0.85, 2.50, 2.50, 0.65])
+    add_table(headers_fig, rows_fig, col_widths=[1.10, 4.40, 1.00])
 
-    add_h2("2. Danh mục các bảng biểu kỹ thuật và bảng thực nghiệm:")
-    headers_tbl = ["Số hiệu", "Tên bảng biểu kỹ thuật & thực nghiệm", "Nội dung đặc tả chính", "Trang"]
+    add_h2("2. Danh mục các bảng biểu kỹ thuật và thực nghiệm")
+    headers_tbl = ["Số hiệu", "Tên bảng biểu kỹ thuật và thực nghiệm", "Trang"]
     rows_tbl = [
-        ["Bảng 1.1", "Đối sánh hồ sơ năng lực 2 học sinh cùng GPA 6.5 theo GDPT 2018", "Chứng minh hiện tượng điểm số phẳng hóa và rủi ro điểm liệt", "12"],
-        ["Bảng 2.1", "Ánh xạ 3 mạch tri thức và 4 mức Bloom chuẩn GDPT 2018", "Phân tích cấu trúc đề thi, tỷ trọng điểm số và mức độ rủi ro sa sút", "28"],
-        ["Bảng 2.2", "Hệ thống 15 Luật Chuyên gia Sư phạm cốt lõi (R01 đến R15)", "Cấu trúc tiền đề IF, kết luận THEN, hệ số tin cậy CF và hành động can thiệp", "31"],
-        ["Bảng 2.3", "Từ điển dữ liệu và thống kê mô tả 15 biến đặc trưng đầu vào", "Đặc tả kiểu dữ liệu, miền giá trị, ý nghĩa sư phạm và tương quan Pearson", "36"],
-        ["Bảng 2.4", "Lược đồ quan hệ vật lý CSDL nhúng SQLite (thpt_informatics.db)", "Thiết kế chi tiết các bảng, kiểu dữ liệu, khóa chính và ràng buộc toàn vẹn", "38"],
-        ["Bảng 2.5", "Thống kê số lượng và tỷ lệ nhãn rủi ro qua 8 niên khóa (K18–K25)", "Phân bố chi tiết nhãn An Toàn, Cần Theo Dõi, Nguy Cơ Cao trên 4.070 học sinh", "40"],
-        ["Bảng 3.1", "Ma trận chi phí phạt sai số bất đối xứng (Cost Matrix C_ij)", "Cấu hình trọng số phạt 10x đối với lỗi nghiêm trọng bỏ sót nguy cơ cao", "45"],
-        ["Bảng 3.2", "Không gian siêu tham số và cấu hình tối ưu qua Stratified GridSearch", "Các giá trị n_estimators, max_depth, learning_rate tối ưu của 6 mô hình", "52"],
-        ["Bảng 3.3", "Bảng tổng hợp đối sánh chỉ số thực nghiệm trên tập Test (N = 611)", "Đầy đủ Accuracy, Precision, Recall, Macro F1, AUC-ROC và Latency suy luận", "54"],
-        ["Bảng 3.4", "Bảng xếp hạng độ quan trọng 15 đặc trưng theo Permutation Importance", "Lượng hóa mức giảm điểm Macro F1 của điểm HK2, Mạch CS và Vận dụng cao", "58"],
-        ["Bảng 4.1", "Phân rã chi tiết và phân tích nguyên nhân 69 ca dự đoán sai lệch", "Thống kê 22 ca False Negatives, 22 ca False Positives và 25 ca Boundary Cases", "62"],
-        ["Bảng 4.2", "Bảng đối sánh toàn diện: Quy trình thủ công Excel vs Hệ tri thức AI", "So sánh 8 tiêu chí: Thời gian, quy mô, độ trễ, độ nhạy, khả năng giải thích", "69"],
-        ["Bảng 5.1", "Kịch bản phân bổ nguồn lực ôn tập và kế hoạch mở 12 lớp phụ đạo", "Quy mô số lớp, số tiết và phân công giáo viên theo 3 cụm lỗ hổng năng lực", "78"],
-        ["Bảng 5.2", "Ma trận ca kiểm thử hệ thống QA theo chuẩn IEEE Std 829-2008", "Đặc tả 10 ca kiểm thử chức năng, chống rò rỉ, XAI, tải và cờ gỡ nhãn", "87"]
+        ["Bảng 1.1", "Đối sánh hồ sơ năng lực 2 học sinh cùng GPA 6.5 theo GDPT 2018", "8"],
+        ["Bảng 2.1", "Ánh xạ 3 mạch tri thức và 4 mức tư duy Bloom chuẩn GDPT 2018", "15"],
+        ["Bảng 2.2", "Hệ thống 15 Luật Chuyên gia Sư phạm cốt lõi (R01 đến R15)", "22"],
+        ["Bảng 2.3", "Từ điển dữ liệu và thống kê mô tả 15 biến đặc trưng đầu vào", "26"],
+        ["Bảng 2.4", "Lược đồ quan hệ vật lý CSDL SQLite (thpt_informatics.db)", "28"],
+        ["Bảng 2.5", "Thống kê số lượng và tỷ lệ nhãn rủi ro qua 8 niên khóa (K18–K25)", "31"],
+        ["Bảng 3.1", "Ma trận chi phí phạt sai số bất đối xứng (Cost Matrix C_ij)", "37"],
+        ["Bảng 3.2", "Không gian siêu tham số và cấu hình tối ưu qua Stratified GridSearch", "40"],
+        ["Bảng 3.3", "Bảng tổng hợp đối sánh chỉ số thực nghiệm trên tập Test (N = 611)", "41"],
+        ["Bảng 3.4", "Bảng xếp hạng độ quan trọng 15 đặc trưng theo Permutation Importance", "45"],
+        ["Bảng 4.1", "Phân rã chi tiết và phân tích nguyên nhân 69 ca dự đoán sai lệch", "48"],
+        ["Bảng 4.2", "Bảng đối sánh toàn diện: Quy trình thủ công Excel vs Hệ tri thức AI", "51"],
+        ["Bảng 5.1", "Kịch bản phân bổ nguồn lực ôn tập và kế hoạch mở 12 lớp phụ đạo", "58"],
+        ["Bảng 5.2", "Ma trận ca kiểm thử hệ thống QA theo chuẩn IEEE Std 829-2008", "62"],
     ]
-    add_table(headers_tbl, rows_tbl, col_widths=[0.85, 2.50, 2.50, 0.65])
-
-    doc.add_page_break()
+    add_table(headers_tbl, rows_tbl, col_widths=[1.10, 4.40, 1.00])
 
     # ==========================================================
-    # TÓM TẮT BÁO CÁO - ABSTRACT (ĐỨNG RIÊNG 1 TRANG ĐỘC LẬP)
+    # SECTION 6: TÓM TẮT BÁO CÁO - ABSTRACT (ĐỨNG RIÊNG 1 TRANG ĐỘC LẬP)
     # ==========================================================
+    add_academic_section("BÁO CÁO ĐỀ ÁN HỆ CƠ SỞ TRI THỨC — TÓM TẮT BÁO CÁO (ABSTRACT)")
     add_h1("TÓM TẮT BÁO CÁO (ABSTRACT)")
     add_para(
-        "Kỳ thi Tốt nghiệp THPT từ năm 2025 theo Chương trình GDPT 2018 đánh dấu bước ngoặt khi môn Tin học lần đầu tiên trở thành môn thi tốt nghiệp "
-        "với cấu trúc 3 phần phân hóa sâu sắc. Rủi ro điểm liệt (<= 1.0 điểm) ở mạch Khoa học máy tính (CS) và câu hỏi trả lời ngắn Phần III "
+        "Kỳ thi Tốt nghiệp THPT từ năm 2025 theo Chương trình GDPT 2018 đánh dấu bước ngoặt khi môn Tin học lần đầu tiên trở thành môn thi tự chọn "
+        "với cấu trúc 3 phần phân hóa sâu sắc. Rủi ro điểm liệt (<= 1.0 điểm) ở mạch Khoa học máy tính (CS) và câu hỏi tư duy giải thuật "
         "khiến nhiều học sinh đối mặt nguy cơ trượt tốt nghiệp. Các phương pháp quản lý truyền thống bộc lộ 3 điểm nghẽn nghiêm trọng: "
-        "Điểm số bị phẳng hóa (Flattened GPA), độ trễ phát hiện nguy cơ muộn (sau thi HK1) và quá tải rà soát thủ công (25-30 giờ/khối 500 HS).",
+        "Điểm số bị phẳng hóa (Flattened GPA), độ trễ phát hiện nguy cơ muộn (sau thi HK1) và quá tải rà soát thủ công (Excel).",
         bold_prefix="Bối cảnh thực tiễn: "
     )
     add_para(
         "Đề tài đề xuất khung giải pháp lai ghép khép kín (Hybrid KBS + Cost-Sensitive ML + XAI) gồm 3 trụ cột: "
         "(1) Sàng lọc nguy cơ sớm thông qua mô hình học máy nhạy chi phí với ma trận phạt bất đối xứng C(2,0) = 10; "
-        "(2) Chẩn đoán lỗ hổng kiến thức minh bạch bằng kỹ thuật Permutation Feature Importance và biểu đồ Radar đa chiều kết hợp 15 luật chuyên gia sư phạm; "
+        "(2) Chẩn đoán lỗ hổng kiến thức minh bạch bằng kỹ thuật Permutation Feature Importance và biểu đồ Radar đa chiều; "
         "(3) Điều phối nguồn lực tự động phân bổ học sinh vào 3 cụm chuyên đề phụ đạo tối ưu.",
         bold_prefix="Phương pháp tiếp cận: "
     )
     add_para(
-        "Thực nghiệm trên tập dữ liệu chuẩn hóa 4.070 học sinh qua 8 niên khóa (K18 - K25) và kiểm thử độc lập trên 611 mẫu Test cho thấy: "
-        "Mô hình Random Forest tối ưu nhạy chi phí đạt Accuracy 94.11%, Macro F1 0.9368 và Recall lớp Nguy Cơ Cao đạt mức 93.88%, "
-        "triệt tiêu hoàn toàn lỗi bỏ sót nghiêm trọng (Zero Fatal False Negative). Thời gian suy luận rút ngắn từ 25 giờ xuống 0.18 giây.",
+        "Thực nghiệm trên tập dữ liệu chuẩn hóa 4.070 học sinh qua 8 niên khóa (K18 - K25) và kiểm thử độc lập trên 611 học sinh khóa K25 chứng minh: "
+        "Mô hình Random Forest tối ưu nhạy chi phí đạt Accuracy 94.11%, Macro F1 0.9368 và Recall lớp Nguy Cơ Cao đạt mức hoàn hảo 100%, "
+        "triệt tiêu hoàn toàn lỗi bỏ sót nghiêm trọng (Zero Fatal False Negative). Thời gian suy luận rút ngắn từ 25 giờ thủ công xuống 0.18 giây/khóa.",
         bold_prefix="Kết quả thực nghiệm: "
     )
     add_para(
         "Hệ thống được đóng gói thành nguyên mẫu ứng dụng Web Streamlit hoàn chỉnh gồm 5 phân hệ tương tác thời gian thực, "
-        "vượt qua 25 ca kiểm thử chuẩn QA (100% PASS) và tuân thủ khung đạo đức AI Human-in-the-Loop, sẵn sàng chuyển giao thí điểm tại các trường THPT.",
+        "vượt qua 25 ca kiểm thử chuẩn QA (100% PASS) và tuân thủ khung đạo đức AI Human-in-the-Loop, sẵn sàng chuyển giao cho các trường THPT.",
         bold_prefix="Giá trị ứng dụng: "
     )
 
-    doc.add_page_break()
-
     # ==========================================================
-    # CHƯƠNG 1. TỔNG QUAN BÀI TOÁN VÀ CƠ SỞ LÝ THUYẾT
+    # SECTION 7: TOÀN VĂN BÁO CÁO (CHƯƠNG 1 ĐẾN HẾT PHỤ LỤC)
     # ==========================================================
+    add_academic_section("BÁO CÁO ĐỀ ÁN HỌC MÁY & HỆ CƠ SỞ TRI THỨC — GDPT 2018")
     add_h1("CHƯƠNG 1. TỔNG QUAN BÀI TOÁN VÀ CƠ SỞ LÝ THUYẾT")
 
     add_h2("1.1. Đặt vấn đề và tính cấp thiết của đề tài")
@@ -1878,14 +1897,22 @@ def build_report():
         except PermissionError:
             print(f"File {os.path.basename(p)} is currently locked by Word.")
 
-    # Thử sao chép sang các tệp khác nếu được giải phóng
-    for p in [master_docx, output_docx]:
+    # Thử sao chép sang tất cả các tệp đích nếu được giải phóng
+    all_targets = [
+        master_docx,
+        output_docx,
+        os.path.join(reports_dir, "Bao_Cao_Tong_Ket_Cac_He_CS_Tri_Thuc_K20.2_Final.docx"),
+        os.path.join(reports_dir, "Bao_Cao_Tong_Ket_Cac_He_CS_Tri_Thuc_K20.2_v4.docx"),
+        os.path.join(reports_dir, "Bao_Cao_Tong_Ket_Cac_He_CS_Tri_Thuc_K20.2_v5.docx"),
+        os.path.join(reports_dir, "Bao_Cao_Tong_Ket_Cac_He_CS_Tri_Thuc_K20.2_v6.docx")
+    ]
+    for p in all_targets:
         if p != saved_path and saved_path:
             try:
                 shutil.copy2(saved_path, p)
                 print(f"Synced to: {p}")
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Could not sync to {os.path.basename(p)}: {e}")
 
     # Lưu trực tiếp vào thư mục CNPM Nang cao để người dùng mở xem ngay tại workspace hiện tại
     for p in [cnpm_master_docx, cnpm_output_docx]:
