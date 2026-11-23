@@ -98,13 +98,13 @@ def build_report():
             r12.font.color.rgb = RGBColor(30, 58, 138)
 
         # P14-P18: Danh sách thành viên Nhóm 02
-        doc.paragraphs[14].text = "Thành viên nhóm:\tĐỗ Ngọc Điền (Nhóm trưởng)"
+        doc.paragraphs[14].text = "Thành viên nhóm:\tĐỗ Ngọc Điền"
         if doc.paragraphs[14].runs:
             doc.paragraphs[14].runs[0].font.name = "Times New Roman"
             doc.paragraphs[14].runs[0].font.size = Pt(14)
 
         members_text = [
-            "\tDương Tùng Lâm (MSSV: 2500444)",
+            "\tDương Tùng Lâm",
             "\tTrần Thị Thu Hương",
             "\tPhạm Văn Chiến",
             "\tVàng A Hứ"
@@ -319,19 +319,27 @@ def build_report():
         doc.add_paragraph().paragraph_format.space_after = Pt(4)
 
     def add_table(headers, rows, col_widths=None):
-        table = doc.add_table(rows=len(rows) + 1, cols=len(headers))
+        total_w_in = 6.50
+        num_cols = len(headers)
+        if col_widths:
+            total_given = sum(col_widths)
+            scale = total_w_in / total_given
+            widths_in = [round(w * scale, 3) for w in col_widths]
+        else:
+            widths_in = [round(total_w_in / num_cols, 3)] * num_cols
+
+        diff = round(total_w_in - sum(widths_in), 3)
+        widths_in[-1] = round(widths_in[-1] + diff, 3)
+        widths_dxa = [int(round(w * 1440)) for w in widths_in]
+
+        table = doc.add_table(rows=len(rows) + 1, cols=num_cols)
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
         table.autofit = False
 
-        if col_widths:
-            total_w = sum(col_widths)
-            scale = 6.50 / total_w
-            norm_widths = [round(w * scale, 3) for w in col_widths]
-        else:
-            norm_widths = [round(6.50 / len(headers), 3)] * len(headers)
-
         tblPr = table._element.xpath('w:tblPr')
         if tblPr:
+            tblPr[0].append(parse_xml(f'<w:tblLayout {nsdecls("w")} w:type="fixed"/>'))
+            tblPr[0].append(parse_xml(f'<w:tblW {nsdecls("w")} w:w="{sum(widths_dxa)}" w:type="dxa"/>'))
             borders = parse_xml(
                 f'<w:tblBorders {nsdecls("w")}>'
                 f'<w:top w:val="single" w:sz="12" w:space="0" w:color="1E3A8A"/>'
@@ -344,30 +352,57 @@ def build_report():
             )
             tblPr[0].append(borders)
 
+        tblGrid = table._element.xpath('w:tblGrid')
+        if tblGrid:
+            tblGrid[0].clear()
+            for w_dxa in widths_dxa:
+                tblGrid[0].append(parse_xml(f'<w:gridCol {nsdecls("w")} w:w="{w_dxa}"/>'))
+
         hdr_row = table.rows[0]
         trPr = hdr_row._element.get_or_add_trPr()
         trPr.append(parse_xml(f'<w:tblHeader {nsdecls("w")}/>'))
         trPr.append(parse_xml(f'<w:cantSplit {nsdecls("w")}/>'))
 
-        center_keywords = ["stt", "mã", "số hiệu", "bước", "năm", "tỷ lệ", "khóa", "phiên bản", "mức độ", "đánh giá", "thời gian", "kỳ vọng", "đóng góp", "trang", "cf"]
+        center_keywords = [
+            "stt", "mã", "số hiệu", "bước", "năm", "tỷ lệ", "khóa", "phiên bản",
+            "mức độ", "đánh giá", "thời gian", "kỳ vọng", "đóng góp", "trang", "cf",
+            "bản cũ", "bản mới", "ký tên", "ký xác nhận", "accuracy", "f1", "precision",
+            "recall", "auc", "latency", "sĩ số", "số lớp", "số ca"
+        ]
         col_is_center = []
         for h in headers:
             hl = h.lower()
             col_is_center.append(any(k in hl for k in center_keywords))
 
+        if num_cols >= 6:
+            hdr_pt = Pt(9.0)
+            body_pt = Pt(8.5)
+        elif num_cols >= 5:
+            hdr_pt = Pt(9.5)
+            body_pt = Pt(9.0)
+        else:
+            hdr_pt = Pt(10.0)
+            body_pt = Pt(9.5)
+
         for idx, text in enumerate(headers):
             cell = hdr_row.cells[idx]
-            cell.width = Inches(norm_widths[idx])
+            cell.width = Inches(widths_in[idx])
+            tcPr = cell._element.get_or_add_tcPr()
+            tcPr.append(parse_xml(f'<w:tcW {nsdecls("w")} w:w="{widths_dxa[idx]}" w:type="dxa"/>'))
+            if len(text.strip()) <= 15 or col_is_center[idx]:
+                tcPr.append(parse_xml(f'<w:noWrap {nsdecls("w")}/>'))
+
             set_cell_background(cell, "1E3A8A")
-            set_cell_margins(cell, top=140, bottom=140, left=120, right=120)
+            set_cell_margins(cell, top=100, bottom=100, left=90, right=90)
             cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
             p = cell.paragraphs[0]
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             p.paragraph_format.space_before = Pt(0)
             p.paragraph_format.space_after = Pt(0)
+            p.paragraph_format.line_spacing = 1.05
             run = p.add_run(text)
             run.font.name = "Times New Roman"
-            run.font.size = Pt(10)
+            run.font.size = hdr_pt
             run.font.bold = True
             run.font.color.rgb = RGBColor(255, 255, 255)
 
@@ -379,16 +414,22 @@ def build_report():
             bg_color = "F8FAFC" if r_idx % 2 == 1 else "FFFFFF"
             for c_idx, val in enumerate(row):
                 cell = tbl_row.cells[c_idx]
-                cell.width = Inches(norm_widths[c_idx])
+                cell.width = Inches(widths_in[c_idx])
+                tcPr = cell._element.get_or_add_tcPr()
+                tcPr.append(parse_xml(f'<w:tcW {nsdecls("w")} w:w="{widths_dxa[c_idx]}" w:type="dxa"/>'))
+
+                val_str = str(val).strip()
+                if col_is_center[c_idx] and len(val_str) <= 12:
+                    tcPr.append(parse_xml(f'<w:noWrap {nsdecls("w")}/>'))
+
                 set_cell_background(cell, bg_color)
-                set_cell_margins(cell, top=90, bottom=90, left=120, right=120)
+                set_cell_margins(cell, top=70, bottom=70, left=90, right=90)
                 cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
                 p = cell.paragraphs[0]
                 p.paragraph_format.space_before = Pt(0)
                 p.paragraph_format.space_after = Pt(0)
-                p.paragraph_format.line_spacing = 1.15
+                p.paragraph_format.line_spacing = 1.05
 
-                val_str = str(val).strip()
                 if col_is_center[c_idx]:
                     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 else:
@@ -396,7 +437,7 @@ def build_report():
 
                 run = p.add_run(val_str)
                 run.font.name = "Times New Roman"
-                run.font.size = Pt(9.5)
+                run.font.size = body_pt
                 if c_idx == 0 and any(k in headers[0].lower() for k in ["class", "bảng", "tên", "trụ cột", "hạng mục", "vai trò", "stt", "thuật ngữ", "số hiệu", "mã"]):
                     run.font.bold = True
                     run.font.color.rgb = RGBColor(30, 58, 138)
@@ -531,38 +572,51 @@ def build_report():
     print("Building Document Content matching 100% of d_n_chi_ti_t_b_o_c_o_c_c_h_c_s_tri_th_c.md...")
 
     # ==========================================================
+    # BẢNG PHÂN CÔNG NHIỆM VỤ THÀNH VIÊN VÀ ĐÓNG GÓP ĐỒ ÁN
+    # (Được bố trí trang trọng ngay sau trang bìa đề án)
+    # ==========================================================
+    add_h1("BẢNG PHÂN CÔNG NHIỆM VỤ CỦA THÀNH VIÊN TRONG NHÓM")
+    add_para(
+        "Nhằm đảm bảo tính minh bạch, công bằng và khách quan trong quá trình nghiên cứu và thực hiện đề án "
+        "'Hệ tri thức và học máy hỗ trợ phân tích ma trận kết quả đánh giá và cảnh báo sớm nguy cơ học tập môn Tin học THPT "
+        "theo Chương trình GDPT 2018', toàn bộ các nội dung công việc được phân công cụ thể cho từng thành viên trong Nhóm 02 "
+        "theo lộ trình 4 tuần thực hiện như sau:"
+    )
+
+    headers_assign = ["STT", "Họ và tên thành viên", "Nhiệm vụ phân công cụ thể trong đề án", "Tỷ lệ hoàn thành", "Ký xác nhận"]
+    rows_assign = [
+        ["1", "Đỗ Ngọc Điền", "Khảo sát cấu trúc ma trận đề thi GDPT 2018, thiết kế kiến trúc 5 tầng Clean Architecture, xây dựng CSDL SQLite nhúng 4.070 học sinh, chuẩn hóa Anti-Leakage Data Pipeline", "100%", ""],
+        ["2", "Dương Tùng Lâm", "Nghiên cứu lý thuyết học máy nhạy chi phí, xây dựng Ma trận chi phí phạt C_ij, huấn luyện và tối ưu hóa 6 mô hình ML, benchmark thực nghiệm đạt Recall Nguy Cơ Cao 93.88% (Zero Fatal Error)", "100%", ""],
+        ["3", "Trần Thị Thu Hương", "Hiện thực hóa mô-đun giải thích minh bạch XAI (Permutation Feature Importance, trích xuất độ quan trọng 15 biến, biểu đồ Radar đối sánh hồ sơ năng lực học sinh STU_0142), phân tích ca sư phạm cá thể", "100%", ""],
+        ["4", "Phạm Văn Chiến", "Phát triển nguyên mẫu phần mềm Web Streamlit (Informatics Master UI) gồm 5 phân hệ tương tác thời gian thực, thiết kế thuật toán gom cụm điều phối nguồn lực mở 12 lớp phụ đạo tối ưu", "100%", ""],
+        ["5", "Vàng A Hứ", "Đảm bảo chất lượng hệ thống: Xây dựng ma trận 25 ca kiểm thử QA, phân tích lỗi chuyên sâu 69 ca sai lệch (FN, FP, Boundary), thực nghiệm đối chứng hiệu quả vận hành và hoàn thiện tài liệu báo cáo", "100%", ""]
+    ]
+    add_table(headers_assign, rows_assign, col_widths=[0.45, 1.45, 3.40, 0.60, 0.60])
+
+    doc.add_page_break()
+
+    # ==========================================================
     # PHẦN MỞ ĐẦU VÀ CÁC DANH MỤC
     # ==========================================================
     add_h1("PHẦN MỞ ĐẦU VÀ CÁC DANH MỤC")
 
     # Trang ký xác nhận và Phê duyệt
     add_h2("Trang ký xác nhận và Phê duyệt (Sign-off Sheet)")
-    headers_sign = ["Vai trò", "Họ và tên", "Chức danh / Trách nhiệm trong đề án", "Chữ ký", "Ngày ký"]
+    headers_sign = ["Vai trò", "Họ và tên", "Trách nhiệm trong đề án", "Chữ ký", "Ngày ký"]
     rows_sign = [
-        ["Người lập", "Đỗ Ngọc Điền", "Trưởng nhóm nghiên cứu & Kỹ sư CSDL", "", "20/11/2026"],
+        ["Người lập", "Đỗ Ngọc Điền", "Kỹ sư CSDL & Kiến trúc hệ thống", "", "20/11/2026"],
         ["Người xem xét 1", "Dương Tùng Lâm", "Kỹ sư Học máy & Tối ưu hóa Cost Matrix", "", "21/11/2026"],
         ["Người xem xét 2", "Trần Thị Thu Hương", "Kỹ sư XAI & Phân tích Radar cá thể", "", "21/11/2026"],
         ["Người xem xét 3", "Phạm Văn Chiến", "Kỹ sư Phần mềm & Streamlit UI Prototype", "", "21/11/2026"],
         ["Người xem xét 4", "Vàng A Hứ", "Kỹ sư Đảm bảo chất lượng & Phân tích lỗi QA", "", "21/11/2026"],
         ["Người phê duyệt", "TS. Chu Hồng Hải", "Giảng viên hướng dẫn học phần", "", "25/11/2026"]
     ]
-    add_table(headers_sign, rows_sign, col_widths=[1.10, 1.60, 2.00, 0.90, 0.90])
+    add_table(headers_sign, rows_sign, col_widths=[1.10, 1.50, 2.10, 0.90, 0.90])
 
-    # Bảng phân công nhiệm vụ
-    add_h2("Bảng phân công nhiệm vụ và Lịch sử thay đổi tài liệu (Revision History)")
-    add_para("1. Bảng phân công nhiệm vụ thành viên Nhóm 02 theo lộ trình 4 tuần:", bold_prefix="Phân công nhiệm vụ: ")
-    headers_assign = ["STT", "Họ và tên học viên", "Mã học viên", "Nhiệm vụ phân công cụ thể", "Đóng góp", "Ký tên"]
-    rows_assign = [
-        ["1", "Đỗ Ngọc Điền", "K20.2-01", "Nhóm trưởng: Khảo sát ma trận GDPT 2018, thiết kế kiến trúc 5 tầng, xây dựng CSDL SQLite nhúng 4.070 HS, chuẩn hóa Anti-Leakage Data Pipeline", "100%", ""],
-        ["2", "Dương Tùng Lâm", "2500444", "Huấn luyện 6 mô hình ML, thiết lập Cost Matrix nhạy chi phí, tối ưu Recall Nguy Cơ Cao đạt 93.88%, thực hiện đối sánh benchmark kỹ thuật", "100%", ""],
-        ["3", "Trần Thị Thu Hương", "K20.2-03", "Hiện thực hóa mô-đun giải thích minh bạch XAI (Permutation Feature Importance, biểu đồ Radar đối sánh hồ sơ năng lực), phân tích ca lâm sàng cá thể", "100%", ""],
-        ["4", "Phạm Văn Chiến", "K20.2-04", "Phát triển nguyên mẫu phần mềm Web Streamlit chuẩn VSTEP Master UI với 5 phân hệ tương tác, thuật toán tự động gom cụm phân bổ nguồn lực ôn tập", "100%", ""],
-        ["5", "Vàng A Hứ", "K20.2-05", "Kiểm thử & Báo cáo: Phân tích chuyên sâu 69 ca dự đoán sai, đối sánh baseline vận hành thời gian thực, khung đạo đức AI, hoàn thiện tài liệu Word và Slide", "100%", ""]
-    ]
-    add_table(headers_assign, rows_assign, col_widths=[0.45, 1.40, 0.85, 2.60, 0.60, 0.60])
-
-    add_para("2. Bảng ghi nhận sự thay đổi và nâng cấp tài liệu qua các phiên bản:", bold_prefix="Lịch sử thay đổi tài liệu: ")
-    headers_rev = ["Thời gian", "Nội dung thay đổi", "Lý do thay đổi", "Phiên bản cũ", "Mô tả sự thay đổi", "Phiên bản mới"]
+    # Lịch sử thay đổi tài liệu
+    add_h2("Lịch sử thay đổi tài liệu (Revision History)")
+    add_para("Bảng ghi nhận sự thay đổi và nâng cấp tài liệu qua các phiên bản:", bold_prefix="Lịch sử phiên bản: ")
+    headers_rev = ["Thời gian", "Nội dung nâng cấp", "Lý do thay đổi", "Bản cũ", "Mô tả chi tiết nội dung thay đổi", "Bản mới"]
     rows_rev = [
         ["15/10/2026", "Khởi tạo tài liệu đặc tả ban đầu", "Nhiệm vụ đồ án môn học", "None", "Xây dựng khung dàn ý 5 chương, đặc tả 15 biến đầu vào GDPT 2018, tạo CSDL 4.070 HS", "v0.1"],
         ["28/10/2026", "Đặc tả 20 YC chức năng & FURPS+", "Hoàn thiện yêu cầu hệ thống", "v0.1", "Bổ sung mã hóa [YC-01 đến YC-20], ma trận truy vết và barem điểm Đúng/Sai", "v1.0"],
@@ -570,7 +624,7 @@ def build_report():
         ["22/11/2026", "Hoàn thiện XAI, 25 Test Cases & Streamlit", "Chuẩn hóa nghiệm thu", "v1.5", "Bổ sung Permutation Importance, Radar Chart cá thể, UI Streamlit 5 tabs, bảng 25 Test Cases", "v2.0"],
         ["23/11/2026", "Khớp 100% Dàn ý Chi tiết được Phê duyệt", "Chuẩn hóa học thuật tối đa", "v2.0", "Mở rộng Literature Review, biểu diễn tri thức, đạo đức AI, 3 Phụ lục toàn văn", "v3.0"]
     ]
-    add_table(headers_rev, rows_rev, col_widths=[0.85, 1.40, 1.25, 0.70, 1.60, 0.70])
+    add_table(headers_rev, rows_rev, col_widths=[0.85, 1.35, 1.15, 0.65, 1.85, 0.65])
 
     # Lời cam đoan & Lời cảm ơn
     add_h2("Lời cam đoan & Lời cảm ơn")
@@ -741,6 +795,19 @@ def build_report():
         "Giáo viên quá tải với các phép tính cộng gộp, dẫn đến việc xếp lớp phụ đạo mang tính cảm tính, cào bằng, không đúng trọng tâm năng lực khiếm khuyết.",
         bold_prefix="3. Quá tải xử lý thủ công (Manual Overhead): "
     )
+    add_para(
+        "Để lượng hóa hiện tượng 'Điểm số bị phẳng hóa', xét trường hợp đối sánh hai hồ sơ học sinh có cùng điểm GPA 6.5 trong Bảng 1.1:"
+    )
+    headers_flattened = ["Thuộc tính năng lực đánh giá", "Học sinh A (Mô hình lệch)", "Học sinh B (Cân bằng)", "Phân tích rủi ro sư phạm"]
+    rows_flattened = [
+        ["Điểm Tin học ứng dụng (ICT)", "9.5 / 10 (Xuất sắc)", "6.5 / 10 (Khá)", "Học sinh A thành thạo ứng dụng văn phòng"],
+        ["Điểm Đạo đức số & Lý thuyết (DL)", "8.0 / 10 (Giỏi)", "6.5 / 10 (Khá)", "Cả hai đều nắm vững an toàn số"],
+        ["Điểm Khoa học máy tính (CS)", "2.0 / 10 (Yếu kém)", "6.5 / 10 (Khá)", "Học sinh A hổng nặng thuật toán & Python"],
+        ["Điểm Vận dụng cao (Phần III)", "0.0 / 2.0 (Liệt tuyệt đối)", "1.5 / 2.0 (Khá)", "Học sinh A không viết được mã giải thuật"],
+        ["Điểm Trung bình môn (GPA)", "6.5 / 10.0 (Học lực Khá)", "6.5 / 10.0 (Học lực Khá)", "Sổ điểm xếp chung hai em vào cùng một mức"],
+        ["Rủi ro thi tốt nghiệp GDPT 2018", "NGUY CƠ ĐIỂM LIỆT (<= 1.0)", "AN TOÀN (Dự kiến 6.5 - 7.0)", "Hệ thống truyền thống bỏ sót 100% em A"]
+    ]
+    add_table(headers_flattened, rows_flattened, col_widths=[1.70, 1.45, 1.45, 1.90])
 
     add_h3("1.1.3. Mục tiêu nghiên cứu, đối tượng và phạm vi hệ thống")
     add_para("Đề án xây dựng một giải pháp chuyển đổi số toàn diện dựa trên khung 3 trụ cột khép kín:")
@@ -1079,7 +1146,7 @@ def build_report():
     add_h2("3.4. Kết quả thực nghiệm và Phân tích giải thích XAI")
 
     add_h3("3.4.1. Bảng tổng hợp đối sánh chỉ số trên tập Test độc lập (N = 611)")
-    headers_eval = ["Mô hình Học máy", "Độ chính xác (Acc)", "Macro Precision", "Recall Nguy Cơ Cao", "Macro F1-Score", "AUC-ROC", "Thời gian suy luận"]
+    headers_eval = ["Mô hình", "Accuracy", "Precision", "Recall NC", "Macro F1", "AUC-ROC", "Latency"]
     rows_eval = [
         ["Baseline 0: Heuristic", "68.41%", "0.6510", "72.24%", "0.6420", "0.6950", "0.01 ms / mẫu"],
         ["Baseline 1: Logistic Reg", "81.18%", "0.7920", "84.49%", "0.7850", "0.8840", "0.02 ms / mẫu"],
@@ -1088,7 +1155,7 @@ def build_report():
         ["Improved: LightGBM", "92.47%", "0.9180", "92.65%", "0.9165", "0.9710", "0.08 ms / mẫu"],
         ["Improved: Random Forest (Best)", "94.11%", "0.9380", "93.88%", "0.9368", "0.9820", "0.12 ms / mẫu"]
     ]
-    add_table(headers_eval, rows_eval, col_widths=[1.70, 0.90, 0.90, 1.00, 0.90, 0.80, 1.20])
+    add_table(headers_eval, rows_eval, col_widths=[1.55, 0.75, 0.75, 0.85, 0.75, 0.70, 1.15])
 
     add_image_with_caption(
         os.path.join(fig_dir, "model_comparison_chart.png"),
@@ -1143,13 +1210,13 @@ def build_report():
         "và ghi nhận 36 trường hợp sai lệch. Mở rộng rà soát trên toàn bộ 4.070 học sinh phát hiện 69 ca sai lệch điển hình:"
     )
 
-    headers_err = ["Nhóm sai lệch", "Số lượng", "Tỷ lệ (%)", "Đặc điểm nhận diện dữ liệu", "Nguyên nhân sư phạm gốc rễ", "Giải pháp kỹ thuật khắc phục"]
+    headers_err = ["Nhóm sai lệch", "Số ca", "Tỷ lệ", "Đặc điểm nhận diện dữ liệu", "Nguyên nhân sư phạm gốc rễ", "Giải pháp kỹ thuật"]
     rows_err = [
         ["False Negatives (Bỏ sót nguy cơ)", "22 ca", "31.9%", "Điểm quá trình khá (6.0 - 6.5), nhưng điểm thi cuối kỳ < 5.0", "Học sinh hổng mạch CS nhưng điểm ICT kéo gỡ điểm tổng", "Tăng trọng số phạt C(2,1) từ 4 lên 6 trong Cost Matrix"],
         ["False Positives (Cảnh báo nhầm)", "22 ca", "31.9%", "Điểm trên lớp tốt (7.0 - 7.5), nhưng tỷ lệ nộp bài LMS < 40%", "Học sinh thiếu máy tính ở nhà nhưng tiếp thu tốt trên lớp", "Bổ sung cờ miễn trừ LMS do hoàn cảnh gia đình khó khăn"],
         ["Boundary Cases (Ca vùng biên)", "25 ca", "36.2%", "Xác suất dự đoán dao động sát ngưỡng cắt (48% vs 52%)", "Năng lực học sinh nằm đúng ranh giới trung bình - yếu", "Thiết lập cờ Unsettled Flag định tuyến giáo viên phỏng vấn"]
     ]
-    add_table(headers_err, rows_err, col_widths=[1.30, 0.60, 0.70, 1.40, 1.30, 1.20])
+    add_table(headers_err, rows_err, col_widths=[1.30, 0.55, 0.55, 1.45, 1.40, 1.25])
 
     add_h3("4.1.2. Phân loại nguyên nhân gốc rễ (Root Cause Analysis)")
     add_bullet(
@@ -1263,14 +1330,14 @@ def build_report():
     )
 
     add_h3("5.2.3. Kịch bản phân bổ nguồn lực thực tế")
-    headers_res = ["Chuyên đề bồi dưỡng", "Sĩ số học sinh", "Số lớp dự kiến (30 HS/lớp)", "Thời lượng", "Định mức kinh phí", "Phân công giáo viên phụ trách"]
+    headers_res = ["Chuyên đề bồi dưỡng", "Sĩ số", "Số lớp", "Thời lượng", "Định mức kinh phí", "Phân công giáo viên"]
     rows_res = [
         ["Cụm 1: Lập trình CS Cấp tốc (Chống liệt)", "148 học sinh", "5 lớp (Lớp CS1 - CS5)", "30 tiết / lớp", "Tiêu chuẩn Ưu tiên 1", "GV cốt cán bồi dưỡng học sinh giỏi CS"],
         ["Cụm 2: Rèn luyện Trả lời ngắn Phần III", "92 học sinh", "3 lớp (Lớp VDC1 - VDC3)", "20 tiết / lớp", "Tiêu chuẩn Ưu tiên 2", "GV có kinh nghiệm luyện thi tốt nghiệp"],
         ["Cụm 3: Củng cố Nền tảng Lý thuyết & Đúng/Sai", "115 học sinh", "4 lớp (Lớp NT1 - NT4)", "25 tiết / lớp", "Tiêu chuẩn Chuẩn", "GV giảng dạy trực tiếp khối 12"],
         ["TỔNG CỘNG TOÀN KHỐI 12", "355 học sinh", "12 lớp phụ đạo", "310 tiết tổng", "Theo ngân sách trường", "Huy động toàn bộ tổ chuyên môn Tin học"]
     ]
-    add_table(headers_res, rows_res, col_widths=[1.80, 0.90, 1.20, 0.80, 1.00, 1.30])
+    add_table(headers_res, rows_res, col_widths=[1.70, 0.70, 0.95, 0.75, 1.10, 1.30])
 
     add_h2("5.3. Thiết kế nguyên mẫu phần mềm Web (UI/UX Prototype)")
 
@@ -1509,32 +1576,41 @@ def build_report():
     )
     add_code_block(code_run)
 
-    # Lưu tệp báo cáo vào thư mục reports của đề tài
+    # Lưu tệp báo cáo vào thư mục reports của đề tài và workspace
     os.makedirs(reports_dir, exist_ok=True)
-    doc.save(master_docx)
-    print(f"Master Academic Report generated: {master_docx} ({os.path.getsize(master_docx)} bytes)")
+    saved_path = None
+    target_candidates = [
+        master_docx,
+        output_docx,
+        os.path.join(reports_dir, "Bao_Cao_Tong_Ket_Cac_He_CS_Tri_Thuc_K20.2_v3.docx")
+    ]
+    for p in target_candidates:
+        try:
+            doc.save(p)
+            saved_path = p
+            print(f"Academic Report successfully saved: {p} ({os.path.getsize(p)} bytes)")
+            break
+        except PermissionError:
+            print(f"File {os.path.basename(p)} is currently locked by Word.")
 
-    # Lưu đè lên output_docx nếu không bị khóa bởi Microsoft Word
-    try:
-        doc.save(output_docx)
-        print(f"Updated primary docx: {output_docx}")
-    except PermissionError:
-        print(f"Note: {output_docx} is currently open in Word. Please close Word to overwrite primary file.")
+    # Thử sao chép sang các tệp khác nếu được giải phóng
+    for p in [master_docx, output_docx]:
+        if p != saved_path and saved_path:
+            try:
+                shutil.copy2(saved_path, p)
+                print(f"Synced to: {p}")
+            except Exception:
+                pass
 
     # Lưu trực tiếp vào thư mục CNPM Nang cao để người dùng mở xem ngay tại workspace hiện tại
-    try:
-        shutil.copy2(master_docx, cnpm_master_docx)
-        print(f"Copied master report to current workspace: {cnpm_master_docx}")
-    except Exception as e:
-        print(f"Copy master note: {e}")
+    for p in [cnpm_master_docx, cnpm_output_docx]:
+        try:
+            doc.save(p)
+            print(f"Copied report to current workspace: {p}")
+        except Exception as e:
+            print(f"Workspace copy note: {e}")
 
-    try:
-        shutil.copy2(master_docx, cnpm_output_docx)
-        print(f"Copied report to current workspace: {cnpm_output_docx}")
-    except Exception as e:
-        print(f"Copy note: {e}")
-
-    return master_docx
+    return saved_path or cnpm_master_docx
 
 
 if __name__ == "__main__":

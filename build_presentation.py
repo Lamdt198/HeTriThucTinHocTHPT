@@ -280,7 +280,7 @@ def create_deck():
     p_a1.alignment = PP_ALIGN.CENTER
 
     p_a2 = tf_a.add_paragraph()
-    p_a2.text = "1. Đỗ Ngọc Điền (Nhóm trưởng)    •    2. Dương Tùng Lâm (MSSV: 2500444)    •    3. Trần Thị Thu Hương\n4. Phạm Văn Chiến    •    5. Vàng A Hứ        |        Lớp: Cao học Công nghệ thông tin K20.2"
+    p_a2.text = "1. Đỗ Ngọc Điền    •    2. Dương Tùng Lâm    •    3. Trần Thị Thu Hương\n4. Phạm Văn Chiến    •    5. Vàng A Hứ        |        Lớp: Cao học Công nghệ thông tin K20.2"
     p_a2.font.name = FONT_MAIN
     p_a2.font.size = Pt(11.5)
     p_a2.font.bold = True
