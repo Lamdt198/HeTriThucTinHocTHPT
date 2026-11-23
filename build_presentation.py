@@ -1,3 +1,4 @@
+import shutil
 """
 build_presentation.py
 Tạo Slide thuyết trình PowerPoint (.pptx) chuẩn Master Design System từ môn CNPM Nâng cao & Kiểm thử
@@ -182,68 +183,110 @@ def create_deck():
     bg1.fill.fore_color.rgb = C_NAVY_DARK
     bg1.line.fill.background()
 
-    top_bar = s1.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, SLIDE_W, Inches(0.18))
+    # Top & Bottom Gold Decorative Bars
+    top_bar = s1.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, SLIDE_W, Inches(0.12))
     top_bar.fill.solid()
     top_bar.fill.fore_color.rgb = C_GOLD
     top_bar.line.fill.background()
 
-    add_card(s1, 1.0, 0.8, 11.333, 5.9, bg=RGBColor(21, 46, 82), border=C_GOLD)
-    tb1 = s1.shapes.add_textbox(Inches(1.3), Inches(1.0), Inches(10.733), Inches(5.5))
-    tf1 = tb1.text_frame
-    tf1.word_wrap = True
+    bot_bar = s1.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, Inches(7.38), SLIDE_W, Inches(0.12))
+    bot_bar.fill.solid()
+    bot_bar.fill.fore_color.rgb = C_GOLD
+    bot_bar.line.fill.background()
 
-    p = tf1.paragraphs[0]
-    p.text = "BỘ GIÁO DỤC VÀ ĐÀO TẠO • VIỆN SAU ĐẠI HỌC • LỚP CAO HỌC CNTT K20.2"
-    p.font.name = FONT_MAIN
-    p.font.size = Pt(11)
-    p.font.bold = True
-    p.font.color.rgb = C_GOLD
-    p.alignment = PP_ALIGN.CENTER
+    # Logo HUBT Transparent on Left
+    logo_path = os.path.join(figures_dir, "logo_hubt_transparent.png")
+    if not os.path.exists(logo_path):
+        logo_path = os.path.join(figures_dir, "logo_hubt.png")
+    if os.path.exists(logo_path):
+        s1.shapes.add_picture(logo_path, Inches(0.85), Inches(0.22), Inches(1.50), Inches(0.98))
 
-    p = tf1.add_paragraph()
-    p.text = "BÁO CÁO ĐỀ ÁN HỌC PHẦN: CÁC HỆ CƠ SỞ TRI THỨC"
-    p.font.name = FONT_MAIN
-    p.font.size = Pt(13.5)
-    p.font.bold = True
-    p.font.color.rgb = RGBColor(191, 219, 254)
-    p.alignment = PP_ALIGN.CENTER
-    p.space_before = Pt(8)
+    # University / Course Header Box on Right
+    tb_uni = s1.shapes.add_textbox(Inches(2.50), Inches(0.20), Inches(10.00), Inches(1.05))
+    tf_u = tb_uni.text_frame
+    tf_u.word_wrap = True
+    p_u1 = tf_u.paragraphs[0]
+    p_u1.alignment = PP_ALIGN.LEFT
+    ru1 = p_u1.add_run()
+    ru1.text = "TRƯỜNG ĐẠI HỌC KINH DOANH VÀ CÔNG NGHỆ HÀ NỘI"
+    ru1.font.name = FONT_MAIN
+    ru1.font.size = Pt(14.5)
+    ru1.font.bold = True
+    ru1.font.color.rgb = RGBColor(254, 243, 199)
 
-    p = tf1.add_paragraph()
-    p.text = "HỆ TRI THỨC VÀ HỌC MÁY HỖ TRỢ PHÂN TÍCH MA TRẬN KẾT QUẢ ĐÁNH GIÁ\nVÀ CẢNH BÁO SỚM NGUY CƠ HỌC TẬP MÔN TIN HỌC THPT"
-    p.font.name = FONT_MAIN
-    p.font.size = Pt(20)
-    p.font.bold = True
-    p.font.color.rgb = C_WHITE
-    p.alignment = PP_ALIGN.CENTER
-    p.space_before = Pt(14)
+    p_u2 = tf_u.add_paragraph()
+    p_u2.alignment = PP_ALIGN.LEFT
+    p_u2.space_before = Pt(2)
+    ru2 = p_u2.add_run()
+    ru2.text = "VIỆN ĐÀO TẠO SAU ĐẠI HỌC — LỚP CAO HỌC CNTT 20.2  •  HỌC PHẦN: CÁC HỆ CƠ SỞ TRI THỨC"
+    ru2.font.name = FONT_MAIN
+    ru2.font.size = Pt(11)
+    ru2.font.bold = True
+    ru2.font.color.rgb = RGBColor(191, 219, 254)
 
-    p = tf1.add_paragraph()
-    p.text = "Định hướng Kỳ thi Tốt nghiệp THPT theo Chương trình Giáo dục Phổ thông 2018 (GDPT 2018)"
-    p.font.name = FONT_MAIN
-    p.font.size = Pt(12)
-    p.font.italic = True
-    p.font.color.rgb = RGBColor(203, 213, 225)
-    p.alignment = PP_ALIGN.CENTER
-    p.space_before = Pt(6)
+    # Main Center Card for Topic Title
+    add_card(s1, 0.85, 1.40, 11.633, 4.05, bg=RGBColor(21, 46, 82), border=C_GOLD)
+    tb_title = s1.shapes.add_textbox(Inches(1.10), Inches(1.55), Inches(11.133), Inches(3.75))
+    tf_t = tb_title.text_frame
+    tf_t.word_wrap = True
 
-    p = tf1.add_paragraph()
-    p.text = "────────────────────────────────────────────────────────────────────────"
-    p.font.size = Pt(9.5)
-    p.font.color.rgb = RGBColor(71, 85, 105)
-    p.alignment = PP_ALIGN.CENTER
-    p.space_before = Pt(12)
+    p_t0 = tf_t.paragraphs[0]
+    p_t0.text = "BÁO CÁO TỔNG KẾT ĐỀ ÁN HỌC MÁY & HỆ CƠ SỞ TRI THỨC"
+    p_t0.font.name = FONT_MAIN
+    p_t0.font.size = Pt(13)
+    p_t0.font.bold = True
+    p_t0.font.color.rgb = C_GOLD
+    p_t0.alignment = PP_ALIGN.CENTER
 
-    p = tf1.add_paragraph()
-    p.text = "Thành viên Nhóm 02: Đỗ Ngọc Điền (Nhóm trưởng)  |  Dương Tùng Lâm (MSSV: 2500444)\n" \
-             "Trần Thị Thu Hương  |  Phạm Văn Chiến  |  Vàng A Hứ\n" \
-             "Giảng viên hướng dẫn: TS. Chu Hồng Hải  •  Thời gian bảo vệ: Tháng 11/2026"
-    p.font.name = FONT_MAIN
-    p.font.size = Pt(11.5)
-    p.font.bold = True
-    p.font.color.rgb = RGBColor(241, 245, 249)
-    p.alignment = PP_ALIGN.CENTER
-    p.space_before = Pt(10)
+    p_t1 = tf_t.add_paragraph()
+    p_t1.text = "“HỆ TRI THỨC VÀ HỌC MÁY HỖ TRỢ PHÂN TÍCH MA TRẬN KẾT QUẢ ĐÁNH GIÁ\nVÀ CẢNH BÁO SỚM NGUY CƠ HỌC TẬP MÔN TIN HỌC THPT”"
+    p_t1.font.name = FONT_MAIN
+    p_t1.font.size = Pt(20.5)
+    p_t1.font.bold = True
+    p_t1.font.color.rgb = C_WHITE
+    p_t1.alignment = PP_ALIGN.CENTER
+    p_t1.space_before = Pt(8)
+
+    p_t2 = tf_t.add_paragraph()
+    p_t2.text = "Định hướng Khảo thí Kỳ thi Tốt nghiệp THPT theo Chương trình Giáo dục Phổ thông 2018 (GDPT 2018)"
+    p_t2.font.name = FONT_MAIN
+    p_t2.font.size = Pt(12)
+    p_t2.font.italic = True
+    p_t2.font.color.rgb = RGBColor(203, 213, 225)
+    p_t2.alignment = PP_ALIGN.CENTER
+    p_t2.space_before = Pt(6)
+
+    p_t3 = tf_t.add_paragraph()
+    p_t3.text = "GIẢNG VIÊN HƯỚNG DẪN: TS. CHU HỒNG HẢI   |   QUY MÔ: 4.070 HỌC SINH • 8 NIÊN KHÓA • 6 MÔ HÌNH ML • XAI RADAR"
+    p_t3.font.name = FONT_MAIN
+    p_t3.font.size = Pt(11)
+    p_t3.font.bold = True
+    p_t3.font.color.rgb = RGBColor(254, 243, 199)
+    p_t3.alignment = PP_ALIGN.CENTER
+    p_t3.space_before = Pt(12)
+
+    # Bottom Author Bar Card
+    add_card(s1, 0.85, 5.65, 11.633, 1.55, bg=RGBColor(15, 37, 68), border=C_BORDER)
+    tb_auth = s1.shapes.add_textbox(Inches(1.05), Inches(5.72), Inches(11.233), Inches(1.40))
+    tf_a = tb_auth.text_frame
+    tf_a.word_wrap = True
+
+    p_a1 = tf_a.paragraphs[0]
+    p_a1.text = "NHÓM HỌC VIÊN THỰC HIỆN ĐỀ ÁN (NHÓM 02):"
+    p_a1.font.name = FONT_MAIN
+    p_a1.font.size = Pt(10.5)
+    p_a1.font.bold = True
+    p_a1.font.color.rgb = C_GOLD
+    p_a1.alignment = PP_ALIGN.CENTER
+
+    p_a2 = tf_a.add_paragraph()
+    p_a2.text = "1. Đỗ Ngọc Điền (Nhóm trưởng)    •    2. Dương Tùng Lâm (MSSV: 2500444)    •    3. Trần Thị Thu Hương\n4. Phạm Văn Chiến    •    5. Vàng A Hứ        |        Lớp: Cao học Công nghệ thông tin K20.2"
+    p_a2.font.name = FONT_MAIN
+    p_a2.font.size = Pt(11.5)
+    p_a2.font.bold = True
+    p_a2.font.color.rgb = C_WHITE
+    p_a2.alignment = PP_ALIGN.CENTER
+    p_a2.space_before = Pt(4)
 
     add_speaker_notes(
         s1,
@@ -1533,6 +1576,12 @@ def create_deck():
     # Save final
     prs.save(output_pptx)
     print(f"Deck successfully created at: {output_pptx}")
+    cnpm_pptx = r"c:\Users\Hi\Downloads\CNPM Nang cao\Slide_Thuyet_Trinh_He_CS_Tri_Thuc_K20.2.pptx"
+    try:
+        shutil.copy2(output_pptx, cnpm_pptx)
+        print(f"Copied presentation to current workspace: {cnpm_pptx}")
+    except Exception as e:
+        print(f"Copy pptx note: {e}")
     print(f"Total slides: {len(prs.slides)}")
 
 if __name__ == '__main__':
