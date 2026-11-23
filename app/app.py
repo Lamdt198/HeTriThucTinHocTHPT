@@ -198,8 +198,10 @@ div[data-baseweb="tab-highlight"] {{
     display: none !important;
 }}
 
-/* 5. NÚT BẤM (BUTTONS) - PHÂN BIỆT PRIMARY & SECONDARY RÕ RÀNG */
-button[kind="primary"], button[data-testid="baseButton-primary"], div[data-testid="stFormSubmitButton"] > button {{
+/* 5. NÚT BẤM (BUTTONS) - KHẮC PHỤC LỖI HOVER & TRÙNG MÀU CHỮ/NỀN */
+button[kind="primary"],
+button[data-testid*="primary"],
+div[data-testid="stFormSubmitButton"] > button {{
     background-color: var(--primary-blue) !important;
     color: #ffffff !important;
     border: 1px solid var(--primary-blue) !important;
@@ -209,17 +211,27 @@ button[kind="primary"], button[data-testid="baseButton-primary"], div[data-testi
     box-shadow: 0 2px 4px rgba(37,99,235,0.2) !important;
     transition: all 0.2s ease !important;
 }}
-button[kind="primary"]:hover, button[data-testid="baseButton-primary"]:hover, div[data-testid="stFormSubmitButton"] > button:hover {{
+button[kind="primary"]:hover,
+button[data-testid*="primary"]:hover,
+div[data-testid="stFormSubmitButton"] > button:hover {{
     background-color: var(--primary-blue-hover) !important;
     border-color: var(--primary-blue-hover) !important;
+    color: #ffffff !important;
     box-shadow: 0 4px 12px rgba(37,99,235,0.35) !important;
     transform: translateY(-1px);
 }}
-button[kind="primary"] *, button[data-testid="baseButton-primary"] *, div[data-testid="stFormSubmitButton"] > button * {{
+button[kind="primary"] *,
+button[data-testid*="primary"] *,
+div[data-testid="stFormSubmitButton"] > button *,
+button[kind="primary"]:hover *,
+button[data-testid*="primary"]:hover *,
+div[data-testid="stFormSubmitButton"] > button:hover * {{
     color: #ffffff !important;
 }}
 
-button[kind="secondary"], button[data-testid="baseButton-secondary"] {{
+/* Nút phụ (Secondary) - loại trừ các nút Download */
+button[kind="secondary"]:not(div.stDownloadButton button),
+button[data-testid*="secondary"]:not(div.stDownloadButton button) {{
     background-color: var(--kbs-bg-card) !important;
     color: var(--kbs-text-title) !important;
     border: 1px solid var(--kbs-border-strong) !important;
@@ -229,17 +241,26 @@ button[kind="secondary"], button[data-testid="baseButton-secondary"] {{
     box-shadow: var(--kbs-shadow) !important;
     transition: all 0.2s ease !important;
 }}
-button[kind="secondary"]:hover, button[data-testid="baseButton-secondary"]:hover {{
+button[kind="secondary"]:not(div.stDownloadButton button):hover,
+button[data-testid*="secondary"]:not(div.stDownloadButton button):hover {{
     border-color: var(--primary-blue) !important;
     color: var(--primary-blue) !important;
     background-color: var(--kbs-tab-active-bg) !important;
     transform: translateY(-1px);
 }}
-button[kind="secondary"] *, button[data-testid="baseButton-secondary"] * {{
+button[kind="secondary"]:not(div.stDownloadButton button) *,
+button[data-testid*="secondary"]:not(div.stDownloadButton button) * {{
     color: inherit !important;
 }}
+button[kind="secondary"]:not(div.stDownloadButton button):hover *,
+button[data-testid*="secondary"]:not(div.stDownloadButton button):hover * {{
+    color: var(--primary-blue) !important;
+}}
 
-div.stDownloadButton > button {{
+/* Nút tải xuống (Download Button) - luôn nền xanh đậm, chữ trắng rõ ràng kể cả khi hover */
+div.stDownloadButton > button,
+div.stDownloadButton > button[kind="secondary"],
+div.stDownloadButton > button[data-testid*="secondary"] {{
     background-color: var(--primary-blue) !important;
     color: #ffffff !important;
     border: 1px solid var(--primary-blue) !important;
@@ -247,8 +268,21 @@ div.stDownloadButton > button {{
     font-weight: 700 !important;
     padding: 9px 20px !important;
     box-shadow: 0 2px 4px rgba(37,99,235,0.2) !important;
+    transition: all 0.2s ease !important;
 }}
-div.stDownloadButton > button * {{
+div.stDownloadButton > button:hover,
+div.stDownloadButton > button[kind="secondary"]:hover,
+div.stDownloadButton > button[data-testid*="secondary"]:hover {{
+    background-color: var(--primary-blue-hover) !important;
+    border-color: var(--primary-blue-hover) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(37,99,235,0.35) !important;
+    transform: translateY(-1px);
+}}
+div.stDownloadButton > button *,
+div.stDownloadButton > button:hover *,
+div.stDownloadButton > button[kind="secondary"] *,
+div.stDownloadButton > button[kind="secondary"]:hover * {{
     color: #ffffff !important;
 }}
 

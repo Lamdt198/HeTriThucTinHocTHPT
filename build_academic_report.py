@@ -122,7 +122,7 @@ def build_report():
             doc.paragraphs[19].runs[0].font.size = Pt(14)
 
         # P20: Giảng viên hướng dẫn
-        doc.paragraphs[20].text = "Giảng viên hướng dẫn: TS. Chu Hồng Hải"
+        doc.paragraphs[20].text = "Giảng viên hướng dẫn: TS. Trương T. Thu Hà"
         if doc.paragraphs[20].runs:
             doc.paragraphs[20].runs[0].font.name = "Times New Roman"
             doc.paragraphs[20].runs[0].font.size = Pt(14)
@@ -636,15 +636,15 @@ def build_report():
         "theo lộ trình 4 tuần thực hiện như sau:"
     )
 
-    headers_assign = ["STT", "Họ và tên thành viên", "Nhiệm vụ phân công cụ thể trong đề án", "Tỷ lệ hoàn thành", "Ký xác nhận"]
+    headers_assign = ["STT", "Họ và tên thành viên", "Nhiệm vụ phân công cụ thể trong đề án", "Tỷ lệ hoàn thành"]
     rows_assign = [
-        ["1", "Đỗ Ngọc Điền", "Khảo sát cấu trúc ma trận đề thi GDPT 2018, thiết kế kiến trúc 5 tầng Clean Architecture, xây dựng CSDL SQLite nhúng 4.070 học sinh, chuẩn hóa Anti-Leakage Data Pipeline", "100%", ""],
-        ["2", "Dương Tùng Lâm", "Nghiên cứu lý thuyết học máy nhạy chi phí, xây dựng Ma trận chi phí phạt C_ij, huấn luyện và tối ưu hóa 6 mô hình ML, benchmark thực nghiệm đạt Recall Nguy Cơ Cao 93.88% (Zero Fatal Error)", "100%", ""],
-        ["3", "Trần Thị Thu Hương", "Hiện thực hóa mô-đun giải thích minh bạch XAI (Permutation Feature Importance, trích xuất độ quan trọng 15 biến, biểu đồ Radar đối sánh hồ sơ năng lực học sinh STU_0142), phân tích ca sư phạm cá thể", "100%", ""],
-        ["4", "Phạm Văn Chiến", "Phát triển nguyên mẫu phần mềm Web Streamlit (Informatics Master UI) gồm 5 phân hệ tương tác thời gian thực, thiết kế thuật toán gom cụm điều phối nguồn lực mở 12 lớp phụ đạo tối ưu", "100%", ""],
-        ["5", "Vàng A Hứ", "Đảm bảo chất lượng hệ thống: Thiết kế ma trận kiểm thử hệ thống QA theo chuẩn IEEE 829, phân tích lỗi chuyên sâu 69 ca sai lệch (FN, FP, Boundary), thực nghiệm đối chứng hiệu quả vận hành và hoàn thiện báo cáo", "100%", ""]
+        ["1", "Đỗ Ngọc Điền", "Khảo sát cấu trúc ma trận đề thi GDPT 2018, thiết kế kiến trúc 5 tầng Clean Architecture, xây dựng CSDL SQLite nhúng 4.070 học sinh, chuẩn hóa Anti-Leakage Data Pipeline", "100%"],
+        ["2", "Dương Tùng Lâm", "Nghiên cứu lý thuyết học máy nhạy chi phí, xây dựng Ma trận chi phí phạt C_ij, huấn luyện và tối ưu hóa 6 mô hình ML, benchmark thực nghiệm đạt Recall Nguy Cơ Cao 93.88% (Zero Fatal Error)", "100%"],
+        ["3", "Trần Thị Thu Hương", "Hiện thực hóa mô-đun giải thích minh bạch XAI (Permutation Feature Importance, trích xuất độ quan trọng 15 biến, biểu đồ Radar đối sánh hồ sơ năng lực học sinh STU_0142), phân tích ca sư phạm cá thể", "100%"],
+        ["4", "Phạm Văn Chiến", "Phát triển nguyên mẫu phần mềm Web Streamlit (Informatics Master UI) gồm 5 phân hệ tương tác thời gian thực, thiết kế thuật toán gom cụm điều phối nguồn lực mở 12 lớp phụ đạo tối ưu", "100%"],
+        ["5", "Vàng A Hứ", "Đảm bảo chất lượng hệ thống: Thiết kế ma trận kiểm thử hệ thống QA theo chuẩn IEEE 829, phân tích lỗi chuyên sâu 69 ca sai lệch (FN, FP, Boundary), thực nghiệm đối chứng hiệu quả vận hành và hoàn thiện báo cáo", "100%"]
     ]
-    add_table(headers_assign, rows_assign, col_widths=[0.45, 1.45, 3.40, 0.60, 0.60])
+    add_table(headers_assign, rows_assign, col_widths=[0.50, 1.60, 3.60, 0.80])
 
     doc.add_page_break()
 
@@ -653,18 +653,20 @@ def build_report():
     # ==========================================================
     add_h1("PHẦN MỞ ĐẦU VÀ CÁC DANH MỤC")
 
-    # Trang ký xác nhận và Phê duyệt
-    add_h2("Trang ký xác nhận và Phê duyệt (Sign-off Sheet)")
-    headers_sign = ["Vai trò", "Họ và tên", "Trách nhiệm trong đề án", "Chữ ký", "Ngày ký"]
+    # Trang phê duyệt của Giảng viên hướng dẫn
+    add_h2("Trang phê duyệt của Giảng viên hướng dẫn (Instructor Approval)")
+    headers_sign = ["Hạng mục đặc tả", "Nội dung thẩm định và phê duyệt đề án"]
     rows_sign = [
-        ["Người lập", "Đỗ Ngọc Điền", "Kỹ sư CSDL & Kiến trúc hệ thống", "", "20/11/2026"],
-        ["Người xem xét 1", "Dương Tùng Lâm", "Kỹ sư Học máy & Tối ưu hóa Cost Matrix", "", "21/11/2026"],
-        ["Người xem xét 2", "Trần Thị Thu Hương", "Kỹ sư XAI & Phân tích Radar cá thể", "", "21/11/2026"],
-        ["Người xem xét 3", "Phạm Văn Chiến", "Kỹ sư Phần mềm & Streamlit UI Prototype", "", "21/11/2026"],
-        ["Người xem xét 4", "Vàng A Hứ", "Kỹ sư Đảm bảo chất lượng & Phân tích lỗi QA", "", "21/11/2026"],
-        ["Người phê duyệt", "TS. Chu Hồng Hải", "Giảng viên hướng dẫn học phần", "", "25/11/2026"]
+        ["Học phần đào tạo", "Các Hệ Cơ Sở Tri Thức (Knowledge-Based Systems)"],
+        ["Tên đề tài nghiên cứu", "Hệ tri thức và học máy hỗ trợ phân tích ma trận kết quả đánh giá và cảnh báo sớm nguy cơ học tập môn Tin học THPT theo Chương trình GDPT 2018"],
+        ["Tập thể học viên thực hiện", "Đỗ Ngọc Điền, Dương Tùng Lâm, Trần Thị Thu Hương, Phạm Văn Chiến, Vàng A Hứ (Lớp CNTT 20.2)"],
+        ["Giảng viên hướng dẫn", "TS. Trương T. Thu Hà"],
+        ["Nhận xét về tính học thuật", "Đề tài đáp ứng đầy đủ yêu cầu học thuật sau đại học, kết hợp chặt chẽ giữa Động cơ suy diễn tri thức luật sư phạm (KBS) và Học máy nhạy chi phí."],
+        ["Nhận xét về tính thực tiễn", "Nguyên mẫu phần mềm hoàn thiện, giải quyết trúng điểm nghẽn của kỳ thi tốt nghiệp GDPT 2018, vượt qua 25 ca kiểm thử QA."],
+        ["Kết luận của Giảng viên", "ĐỒNG Ý CHO PHÉP BẢO VỆ CHÍNH THỨC TRƯỚC HỘI ĐỒNG CHẤM ĐỒ ÁN"],
+        ["Chữ ký Giảng viên hướng dẫn", "TS. Trương T. Thu Hà  (Ký và ghi rõ họ tên) ................................................................"]
     ]
-    add_table(headers_sign, rows_sign, col_widths=[1.10, 1.50, 2.10, 0.90, 0.90])
+    add_table(headers_sign, rows_sign, col_widths=[2.10, 4.40])
 
     # Lịch sử thay đổi tài liệu
     add_h2("Lịch sử thay đổi tài liệu (Revision History)")
@@ -689,8 +691,8 @@ def build_report():
         bold_prefix="Lời cam đoan danh dự: "
     )
     add_para(
-        "Nhóm tác giả xin bày tỏ lòng biết ơn sâu sắc nhất tới TS. Chu Hồng Hải - Giảng viên phụ trách học phần Các Hệ Cơ Sở Tri Thức. "
-        "Thầy đã luôn tận tình định hướng phương pháp luận nghiên cứu, gợi mở những ý tưởng khoa học then chốt về việc kết hợp giữa Động cơ suy diễn luật sư phạm "
+        "Nhóm tác giả xin bày tỏ lòng biết ơn sâu sắc nhất tới TS. Trương T. Thu Hà - Giảng viên phụ trách học phần Các Hệ Cơ Sở Tri Thức. "
+        "Cô đã luôn tận tình định hướng phương pháp luận nghiên cứu, gợi mở những ý tưởng khoa học then chốt về việc kết hợp giữa Động cơ suy diễn luật sư phạm "
         "với Mô hình học máy nhạy chi phí và Công nghệ giải thích minh bạch XAI. "
         "Nhóm nghiên cứu cũng xin chân thành cảm ơn các Thầy/Cô trong Viện Đào tạo Sau Đại học - Trường Đại học Kinh doanh và Công nghệ Hà Nội "
         "đã tạo điều kiện thuận lợi nhất cho nhóm trong suốt quá trình học tập và hoàn thiện đề án.",
@@ -780,6 +782,113 @@ def build_report():
         "vượt qua 25 ca kiểm thử chuẩn QA (100% PASS) và tuân thủ khung đạo đức AI Human-in-the-Loop, sẵn sàng chuyển giao thí điểm tại các trường THPT.",
         bold_prefix="Giá trị ứng dụng: "
     )
+
+    doc.add_page_break()
+
+    # ==========================================================
+    # MỤC LỤC BÁO CÁO (TABLE OF CONTENTS)
+    # ==========================================================
+    add_h2("MỤC LỤC BÁO CÁO (TABLE OF CONTENTS)")
+    add_para("Chi tiết cấu trúc 5 chương nội dung đề án, các danh mục kỹ thuật và phụ lục toàn văn:", bold_prefix="Cấu trúc đề tài: ")
+
+    # Front matter
+    add_toc_entry("BẢNG PHÂN CÔNG NHIỆM VỤ THÀNH VIÊN TRONG NHÓM", "2", level=1)
+    add_toc_entry("PHẦN MỞ ĐẦU VÀ CÁC DANH MỤC", "3", level=1)
+    add_toc_entry("Trang phê duyệt của Giảng viên hướng dẫn", "3", level=2)
+    add_toc_entry("Lịch sử thay đổi tài liệu (Revision History)", "4", level=2)
+    add_toc_entry("Lời cam đoan & Lời cảm ơn", "5", level=2)
+    add_toc_entry("Danh mục ký hiệu, thuật ngữ và từ viết tắt", "6", level=2)
+    add_toc_entry("Danh mục bảng biểu kỹ thuật & thực nghiệm", "7", level=2)
+    add_toc_entry("Danh mục hình vẽ kỹ thuật", "8", level=2)
+    add_toc_entry("Tóm tắt báo cáo (Abstract)", "9", level=2)
+    add_toc_entry("Mục lục báo cáo (Table of Contents)", "10", level=2)
+
+    # Chương 1
+    add_toc_entry("CHƯƠNG 1. TỔNG QUAN BÀI TOÁN VÀ CƠ SỞ LÝ THUYẾT", "11", level=1)
+    add_toc_entry("1.1. Đặt vấn đề và tính cấp thiết của đề tài", "11", level=2)
+    add_toc_entry("1.1.1. Bối cảnh đổi mới khảo thí môn Tin học theo GDPT 2018", "11", level=3)
+    add_toc_entry("1.1.2. Ba điểm nghẽn của phương pháp đánh giá truyền thống tại trường THPT", "13", level=3)
+    add_toc_entry("1.1.3. Mục tiêu nghiên cứu, đối tượng và phạm vi hệ thống", "15", level=3)
+    add_toc_entry("1.2. Tổng quan các nghiên cứu liên quan (Literature Review)", "16", level=2)
+    add_toc_entry("1.2.1. Khai phá dữ liệu giáo dục (Educational Data Mining - EDM)", "16", level=3)
+    add_toc_entry("1.2.2. Hệ cơ sở tri thức lai ghép (Hybrid Knowledge-Based Systems)", "18", level=3)
+    add_toc_entry("1.2.3. Khoảng trống nghiên cứu (Research Gaps)", "20", level=3)
+    add_toc_entry("1.3. Cơ sở lý thuyết nền tảng", "21", level=2)
+    add_toc_entry("1.3.1. Biểu diễn tri thức và Động cơ suy diễn", "21", level=3)
+    add_toc_entry("1.3.2. Học máy nhạy chi phí (Cost-Sensitive Learning)", "23", level=3)
+    add_toc_entry("1.3.3. Các thuật toán học tập tổ hợp (Ensemble Learning)", "25", level=3)
+    add_toc_entry("1.3.4. Trí tuệ nhân tạo có thể giải thích (Explainable AI - XAI)", "27", level=3)
+
+    # Chương 2
+    add_toc_entry("CHƯƠNG 2. XÂY DỰNG CƠ SỞ TRI THỨC SƯ PHẠM VÀ DỮ LIỆU ĐẦU VÀO", "29", level=1)
+    add_toc_entry("2.1. Kỹ thuật thu thập và mô hình hóa tri thức miền (Domain Knowledge Engineering)", "29", level=2)
+    add_toc_entry("2.1.1. Ánh xạ ma trận năng lực GDPT 2018", "29", level=3)
+    add_toc_entry("2.1.2. Phân tích độ nhạy rủi ro điểm liệt", "31", level=3)
+    add_toc_entry("2.2. Thiết kế Cơ sở tri thức luật chuyên gia (Knowledge Base & Inference Engine)", "32", level=2)
+    add_toc_entry("2.2.1. Hệ thống hóa bộ luật sản xuất sư phạm (Production Rules)", "32", level=3)
+    add_toc_entry("2.2.2. Cơ chế kết hợp độ tin cậy Certainty Factor (CF) và Kiến trúc lai ghép", "35", level=3)
+    add_toc_entry("2.3. Đặc tả không gian 15 đặc trưng đầu vào và Kiến trúc CSDL SQLite", "37", level=2)
+    add_toc_entry("2.3.1. Từ điển dữ liệu 15 biến đặc trưng đầu vào", "37", level=3)
+    add_toc_entry("2.3.2. Thiết kế lược đồ CSDL quan hệ nhúng (thpt_informatics.db)", "39", level=3)
+    add_toc_entry("2.4. Phương pháp sinh dữ liệu mô phỏng & Pipeline chống rò rỉ dữ liệu", "41", level=2)
+    add_toc_entry("2.4.1. Quy trình sinh dữ liệu mô phỏng chuẩn thống kê (4.070 học sinh)", "41", level=3)
+    add_toc_entry("2.4.2. Quy trình tiền xử lý chống rò rỉ dữ liệu 4 bước (Anti-Leakage Data Pipeline)", "43", level=3)
+
+    # Chương 3
+    add_toc_entry("CHƯƠNG 3. THIẾT KẾ MÔ HÌNH HỌC MÁY VÀ TỐI ƯU HÓA NHẠY CHI PHÍ", "45", level=1)
+    add_toc_entry("3.1. Phát biểu bài toán học máy và Thiết kế Ma trận chi phí (Cost Matrix)", "45", level=2)
+    add_toc_entry("3.1.1. Định nghĩa không gian bài toán", "45", level=3)
+    add_toc_entry("3.1.2. Xây dựng Ma trận chi phí phạt bất đối xứng", "46", level=3)
+    add_toc_entry("3.2. Thiết kế kiến trúc 6 mô hình thực nghiệm", "48", level=2)
+    add_toc_entry("3.2.1. Nhóm mô hình cơ sở (Baselines)", "48", level=3)
+    add_toc_entry("3.2.2. Nhóm mô hình học tập tổ hợp cải tiến (Ensemble Models)", "50", level=3)
+    add_toc_entry("3.3. Quy trình huấn luyện và tinh chỉnh siêu tham số", "52", level=2)
+    add_toc_entry("3.3.1. Thiết lập kiểm thử chéo phân tầng (Stratified 5-Fold Cross-Validation)", "52", level=3)
+    add_toc_entry("3.3.2. Tối ưu hóa siêu tham số qua GridSearchCV", "53", level=3)
+    add_toc_entry("3.4. Kết quả thực nghiệm và Phân tích giải thích XAI", "55", level=2)
+    add_toc_entry("3.4.1. Bảng tổng hợp đối sánh chỉ số trên tập Test độc lập (N = 611)", "55", level=3)
+    add_toc_entry("3.4.2. Phân tích Ma trận nhầm lẫn (Confusion Matrix) của mô hình tối ưu", "57", level=3)
+    add_toc_entry("3.4.3. Giải thích mô hình toàn cục (Global XAI – Permutation Feature Importance)", "59", level=3)
+    add_toc_entry("3.4.4. Giải thích mô hình cục bộ (Local XAI – Biểu đồ Radar hồ sơ năng lực)", "61", level=3)
+
+    # Chương 4
+    add_toc_entry("CHƯƠNG 4. PHÂN TÍCH LỖI CHUYÊN SÂU VÀ ĐÁNH GIÁ HIỆU QUẢ VẬN HÀNH", "63", level=1)
+    add_toc_entry("4.1. Phân tích lỗi chuyên sâu (In-Depth Error Analysis)", "63", level=2)
+    add_toc_entry("4.1.1. Thống kê tổng hợp các ca dự đoán sai", "63", level=3)
+    add_toc_entry("4.1.2. Phân loại nguyên nhân gốc rễ (Root Cause Analysis)", "65", level=3)
+    add_toc_entry("4.1.3. Giải pháp khắc phục kỹ thuật", "67", level=3)
+    add_toc_entry("4.2. Thực nghiệm đối chứng hiệu quả vận hành (Operational Benchmark)", "68", level=2)
+    add_toc_entry("4.2.1. Thiết lập kịch bản thực nghiệm", "68", level=3)
+    add_toc_entry("4.2.2. Đối sánh toàn diện: Quy trình Excel thủ công vs Hệ tri thức AI", "70", level=3)
+
+    # Chương 5
+    add_toc_entry("CHƯƠNG 5. KIẾN TRÚC PHẦN MỀM, THUẬT TOÁN PHÂN BỔ NGUỒN LỰC VÀ ĐẠO ĐỨC AI", "72", level=1)
+    add_toc_entry("5.1. Kiến trúc hệ thống tổng thể 5 tầng công nghệ (End-to-End Architecture)", "72", level=2)
+    add_toc_entry("5.1.1. Sơ đồ kiến trúc và luồng dữ liệu đầu cuối", "72", level=3)
+    add_toc_entry("5.1.2. Đặc tả chi tiết 5 tầng kiến trúc và Mẫu thiết kế GoF", "74", level=3)
+    add_toc_entry("5.2. Thuật toán gom cụm và lập kịch bản phân bổ nguồn lực ôn tập", "76", level=2)
+    add_toc_entry("5.2.1. Phát biểu bài toán phân bổ nguồn lực sư phạm", "76", level=3)
+    add_toc_entry("5.2.2. Mã giả (Pseudocode) thuật toán gom cụm kết hợp luật & XAI", "77", level=3)
+    add_toc_entry("5.2.3. Kịch bản phân bổ nguồn lực thực tế", "79", level=3)
+    add_toc_entry("5.3. Thiết kế nguyên mẫu phần mềm Web (UI/UX Prototype)", "81", level=2)
+    add_toc_entry("5.3.1. Kiến trúc 5 phân hệ chức năng (Informatics Master UI)", "81", level=3)
+    add_toc_entry("5.3.2. Minh họa kịch bản sử dụng (Use-Case Walkthrough)", "83", level=3)
+    add_toc_entry("5.4. Khung quản trị rủi ro và Đạo đức AI trong giáo dục", "85", level=2)
+    add_toc_entry("5.4.1. Nguyên tắc Con người giữ quyền quyết định (Human-in-the-Loop)", "85", level=3)
+    add_toc_entry("5.4.2. Bảo mật thông tin và Chống dán nhãn định kiến (Anti-Stigmatization)", "86", level=3)
+    add_toc_entry("5.4.3. Cơ chế cập nhật động và Xóa nhãn cảnh báo (Dynamic Retraining & Unlabeling)", "87", level=3)
+    add_toc_entry("5.5. Kiểm thử hệ thống và Đánh giá chất lượng phần mềm (System Testing & QA theo IEEE Std 829-2008)", "88", level=2)
+
+    # Kết luận & Phụ lục
+    add_toc_entry("KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN", "90", level=1)
+    add_toc_entry("1. Tổng kết các kết quả đạt được", "90", level=2)
+    add_toc_entry("2. Những hạn chế còn tồn tại", "91", level=2)
+    add_toc_entry("3. Hướng phát triển tiếp theo", "92", level=2)
+    add_toc_entry("TÀI LIỆU THAM KHẢO VÀ PHỤ LỤC", "93", level=1)
+    add_toc_entry("Tài liệu tham khảo (Chuẩn IEEE)", "93", level=2)
+    add_toc_entry("Phụ lục A: Toàn văn bộ 15 luật sản xuất sư phạm (Production Rules)", "96", level=2)
+    add_toc_entry("Phụ lục B: Mã nguồn cốt lõi của quy trình tiền xử lý chống rò rỉ dữ liệu", "99", level=2)
+    add_toc_entry("Phụ lục C: Hướng dẫn cài đặt môi trường và vận hành ứng dụng Web Streamlit", "102", level=2)
 
     doc.add_page_break()
 

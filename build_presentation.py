@@ -12,7 +12,7 @@ Học phần: Các Hệ Cơ Sở Tri Thức (Knowledge-Based Systems) - Lớp Ca
 - Bảng biểu XML border đồng nhất (#CBD5E1)
 - Nhúng đầy đủ 6 biểu đồ phân giải cao kèm callout nhận xét
 - Nhúng 100% Speaker Notes trực tiếp vào PowerPoint Notes slide (Presenter View)
-- Thông tin chính thức: Nhóm 02 (Đỗ Ngọc Điền, Dương Tùng Lâm, Trần Thị Thu Hương, Phạm Văn Chiến, Vàng A Hứ), GVHD TS. Chu Hồng Hải
+- Thông tin chính thức: Nhóm 02 (Đỗ Ngọc Điền, Dương Tùng Lâm, Trần Thị Thu Hương, Phạm Văn Chiến, Vàng A Hứ), GVHD TS. Trương T. Thu Hà
 """
 
 import os
@@ -257,7 +257,7 @@ def create_deck():
     p_t2.space_before = Pt(6)
 
     p_t3 = tf_t.add_paragraph()
-    p_t3.text = "GIẢNG VIÊN HƯỚNG DẪN: TS. CHU HỒNG HẢI   |   QUY MÔ: 4.070 HỌC SINH • 8 NIÊN KHÓA • 6 MÔ HÌNH ML • XAI RADAR"
+    p_t3.text = "GIẢNG VIÊN HƯỚNG DẪN: TS. TRƯƠNG T. THU HÀ   |   QUY MÔ: 4.070 HỌC SINH • 8 NIÊN KHÓA • 6 MÔ HÌNH ML • XAI RADAR"
     p_t3.font.name = FONT_MAIN
     p_t3.font.size = Pt(11)
     p_t3.font.bold = True
@@ -1302,7 +1302,7 @@ def create_deck():
 
     # ==================== SLIDE 23: NGUYÊN MẪU ỨNG DỤNG WEB ====================
     s23 = prs.slides.add_slide(blank_layout)
-    apply_master_frame(s23, 23, "Phần mềm", "6.3 Nguyên Mẫu Phần Mềm Web (Streamlit VSTEP Master UI)",
+    apply_master_frame(s23, 23, "Phần mềm", "6.3 Nguyên Mẫu Phần Mềm Web (Streamlit Informatics Master UI)",
                        "Phần mềm gồm 5 phân hệ hoàn chỉnh: Tổng quan, Chẩn đoán cá nhân Radar, Dự báo hàng loạt Excel/CSV, Phân cụm phụ đạo và Đối sánh benchmark.")
     web_tabs = [
         ("TAB 1: TỔNG QUAN HỆ THỐNG", "• Thống kê tổng số học sinh 8 khóa, phân bổ nhãn rủi ro toàn trường.\n• Biểu đồ phân bố động lực học tập và tỷ lệ hoàn thành LMS.", C_BLUE_ACCENT),
